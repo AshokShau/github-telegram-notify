@@ -1136,7 +1136,7 @@ func HandleGollumEvent(e *github.GollumEvent) string {
 			if page.Summary != nil && *page.Summary != "" {
 				msg.WriteString(fmt.Sprintf("<i>Summary:</i> %s\n", *page.Summary))
 			}
-			
+
 			if page.SHA != nil && *page.SHA != "" {
 				msg.WriteString(fmt.Sprintf("<i>Revision:</i> %s\n", (*page.SHA)[:7]))
 			}
