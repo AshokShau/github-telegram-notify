@@ -1,75 +1,94 @@
-# GitHub Webhook Listener
+# GitHub Webhook to Telegram Bridge 🔗
 
-A simple GitHub webhook listener written in Go. It listens for incoming webhook requests from GitHub and handles various
-types of GitHub events (e.g. push, pull request, issue) and sends them to a Telegram chat.
+A lightweight Go service that listens for GitHub webhooks and forwards notifications to Telegram chats with clean formatting.
 
-## Overview
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FAshokShau%2Fgithub-telegram-notify)
 
-The GitHub Webhook Listener project is a simple application written in Go that listens for incoming webhook requests
-from GitHub. It handles various types of GitHub events such as push, pull request, issue, and more. The application is
-designed to be a basic example of how to create a GitHub webhook listener using Go.
+## 🌟 Features
 
-## Demo Bot
-[FallenAlert](https://t.me/FallenAlertBot) || https://git-hook.vercel.app/
+- Real-time GitHub event notifications in Telegram
+- Supports 20+ GitHub event types (pushes, PRs, issues, deployments, etc.)
+- Clean, formatted messages with emoji visual cues
+- Easy deployment to Vercel
+- Lightweight
 
-## Features
+## 🚀 Quick Start
 
-* Listens for incoming webhook requests from GitHub
-* Handles various types of GitHub events (e.g. push, pull request, issue)
-* Serves a simple HTML page at the root URL
+### Prerequisites
+- Go 1.20+ (for local development)
+- [Telegram bot token](https://core.telegram.org/bots#6-botfather)
+- GitHub repository admin access
 
-## Requirements
+### Local Development
+```bash
+git clone https://github.com/AshokShau/github-telegram-notify.git
+cd github-telegram-notify
+go run main.go
+```
 
-* Go version 1.23.3 or higher
-* BotToken - Get it from [Telegram](https://t.me/BotFather)
-* GitHub webhook setup (see below for details)
-* Vercel if you want to deploy it to production
-* Ngrok if you want to deploy it to localhost
+For local testing, expose your port using:
+```bash
+ngrok http 3000
+```
 
-## Installation
+## ⚙️ Configuration
 
-1. Install Go (if not already installed) : [https://go.dev/dl/](https://go.dev/dl/)
-2. Clone this repository to your local machine and navigate to the project directory
-3. Run `go run main.go` to start the application
-4. Configure your GitHub webhook to point to `http://localhost:3000/github` use Ngrok for testing/localhost
+1. **Environment Variables**:
+    - `BOT_TOKEN`: Your Telegram bot token
+    - `PORT`: Server port (default: 3000)
 
-> As you know You can't use localhost for webhooks. you can
-> use [Ngrok](https://dashboard.ngrok.com/get-started/setup/linux) for that.
+2. **GitHub Webhook Setup**:
+    - Payload URL: `https://your-domain.com/github?chat_id=YOUR_CHAT_ID`
+    - Content type: `application/json`
+    - Events: Select events to forward
 
-## GitHub Webhook Setup
+## 🛠️ Supported Events
 
-1. Go to your GitHub repository settings
-2. Click on "Webhooks"
-3. Click on "Add webhook"
-4. Enter the URL `http://localhost:3000/github?chat_id=-1000000000`
-5. Set Content type to "application/json"
-6. Choose the events you want to listen for (e.g. push, pull request, issue)
-7. Click "Add webhook"
+| Event Type          | Description                    |
+|---------------------|--------------------------------|
+| Push                | Code pushes to branches        |
+| Pull Request        | PR opened/closed/merged        |
+| Issues              | Issue created/commented/closed |
+| Releases            | New version releases           |
+| Deployments         | Code deployments               |
+| Security Advisories | Vulnerability alerts           |
+| And More            | ......                         |
 
-## Deployment
+## 🌐 Deployment
 
-### Vercel Deployment
+### Vercel (Recommended)
+1. Fork this repository
+2. Create new Vercel project
+3. Import your forked repo
+4. Add `BOT_TOKEN` in project settings
+5. Deploy!
 
-1. Fork this repository to your GitHub account
-2. Visit Vercel.com and Create a new Vercel project
-3. Deploy the forked repository to Vercel
-4. Done !
+### Manual Deployment
+Build and run the binary:
+```bash
+go build -o gh-telegram
+./gh-telegram
+```
 
-## API Documentation
+## 📚 Documentation
 
-* `/github`: Handles incoming webhook requests from GitHub (e.g. `/github?chat_id=123456789`)
-* `/`: Serves a simple HTML page
+- **Endpoint**: `/github` - Handles GitHub webhooks
+- **Query Params**:
+    - `chat_id`: Required Telegram chat ID
 
-## Contributing
+## 🤝 Contributing
 
-Pull requests are welcome! If you'd like to contribute to this project, please fork the repository and submit a pull
-request.
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a PR with clear description
 
-## License
+## 📜 License
 
-This project is licensed under the [MIT License](LICENSE).
+MIT License - See [LICENSE](LICENSE) for details.
 
-## Support | Feedback | Issues
+## 💬 Support
 
-If you have any questions, feedback, or issues, please contact me at [Telegram](https://t.me/AshokShau). 
-[Update Channel](https://t.me/FallenProjects)
+- [Demo Bot](https://t.me/FallenAlertBot)
+- [Telegram Support](https://t.me/AshokShau)
+- [Update Channel](https://t.me/FallenProjects)
