@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github-webhook/GithubEvent/config"
-	"github-webhook/GithubEvent/str"
+	"github-webhook/src"
+	"github-webhook/src/config"
 	"log"
 	"net/http"
 )
 
 func main() {
-	http.HandleFunc("/", str.Home)
-	http.HandleFunc("/github", str.GitHubWebhook)
+	http.HandleFunc("/", src.Home)
+	http.HandleFunc("/github", src.GitHubWebhook)
 
 	port := config.Port
 	if port == "" {

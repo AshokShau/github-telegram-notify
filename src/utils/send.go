@@ -1,16 +1,16 @@
-package str
+package utils
 
 import (
 	"errors"
 	"fmt"
-	"github-webhook/GithubEvent/config"
+	"github-webhook/src/config"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 )
 
-func sendToTelegram(chatID, message string) error {
+func SendToTelegram(chatID, message string) error {
 	if message == "" || chatID == "" {
 		return errors.New("message or chatID is empty")
 	}

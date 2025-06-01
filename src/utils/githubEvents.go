@@ -1,4 +1,4 @@
-package str
+package utils
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v71/github"
 )
 
-func handleIssuesEvent(event *github.IssuesEvent) string {
+func HandleIssuesEvent(event *github.IssuesEvent) string {
 	repo := event.GetRepo().GetFullName()
 	action := event.GetAction()
 	sender := event.GetSender().GetLogin()
@@ -104,7 +104,7 @@ func handleIssuesEvent(event *github.IssuesEvent) string {
 	}
 }
 
-func handlePullRequestEvent(event *github.PullRequestEvent) string {
+func HandlePullRequestEvent(event *github.PullRequestEvent) string {
 	repo := event.GetRepo().GetFullName()
 	action := event.GetAction()
 	sender := event.GetSender().GetLogin()
@@ -190,7 +190,7 @@ func handlePullRequestEvent(event *github.PullRequestEvent) string {
 	}
 }
 
-func handleStarredEvent(event *github.StarredRepository) string {
+func HandleStarredEvent(event *github.StarredRepository) string {
 	repo := event.Repository.GetFullName()
 	repoURL := event.Repository.GetHTMLURL()
 	sender := event.Repository.Owner.GetLogin()
@@ -210,7 +210,7 @@ func handleStarredEvent(event *github.StarredRepository) string {
 		forks,
 	)
 }
-func handlePushEvent(event *github.PushEvent) string {
+func HandlePushEvent(event *github.PushEvent) string {
 	repo := event.Repo.GetFullName()
 	repoURL := event.Repo.GetHTMLURL()
 	sender := event.Sender.GetLogin()
@@ -318,7 +318,7 @@ func handlePushEvent(event *github.PushEvent) string {
 
 	return message
 }
-func handleCreateEvent(event *github.CreateEvent) string {
+func HandleCreateEvent(event *github.CreateEvent) string {
 	repo := event.Repo.GetFullName()
 	repoURL := event.Repo.GetHTMLURL()
 	sender := event.Sender.GetLogin()
@@ -355,7 +355,7 @@ func handleCreateEvent(event *github.CreateEvent) string {
 
 	return message
 }
-func handleDeleteEvent(event *github.DeleteEvent) string {
+func HandleDeleteEvent(event *github.DeleteEvent) string {
 	repo := event.Repo.GetFullName()
 	repoURL := event.Repo.GetHTMLURL()
 	sender := event.Sender.GetLogin()
@@ -394,7 +394,7 @@ func handleDeleteEvent(event *github.DeleteEvent) string {
 
 	return message
 }
-func handleForkEvent(event *github.ForkEvent) string {
+func HandleForkEvent(event *github.ForkEvent) string {
 	originalRepo := event.Repo.GetFullName() // The original repository's full name
 	forkedRepo := event.Forkee.GetFullName() // The forked repository's full name
 	sender := event.Sender.GetLogin()        // The user who created the fork
@@ -417,7 +417,7 @@ func handleForkEvent(event *github.ForkEvent) string {
 
 	return message
 }
-func handleCommitCommentEvent(event *github.CommitCommentEvent) string {
+func HandleCommitCommentEvent(event *github.CommitCommentEvent) string {
 	comment := event.Comment.GetBody()       // The body of the commit comment
 	commitSHA := event.Comment.GetCommitID() // The commit ID (SHA)
 	repo := event.Repo.GetFullName()         // The repository's full name
@@ -468,7 +468,7 @@ func handleCommitCommentEvent(event *github.CommitCommentEvent) string {
 	}
 }
 
-func handlePublicEvent(event *github.PublicEvent) string {
+func HandlePublicEvent(event *github.PublicEvent) string {
 	repoName := event.Repo.GetFullName() // Full name of the repository
 	repoURL := event.Repo.GetHTMLURL()   // URL of the repository
 	sender := event.Sender.GetLogin()    // User who made the repository public
@@ -487,7 +487,7 @@ func handlePublicEvent(event *github.PublicEvent) string {
 	return message
 }
 
-func handleIssueCommentEvent(event *github.IssueCommentEvent) string {
+func HandleIssueCommentEvent(event *github.IssueCommentEvent) string {
 	action := event.GetAction()            // The action performed (created, edited, deleted)
 	issueTitle := event.Issue.GetTitle()   // The title of the issue
 	issueURL := event.Issue.GetHTMLURL()   // The URL of the issue
@@ -540,7 +540,7 @@ func handleIssueCommentEvent(event *github.IssueCommentEvent) string {
 		)
 	}
 }
-func handleMemberEvent(event *github.MemberEvent) string {
+func HandleMemberEvent(event *github.MemberEvent) string {
 	action := event.GetAction()          // The action performed (added, removed, etc.)
 	member := event.Member.GetLogin()    // The login of the member
 	repoName := event.Repo.GetFullName() // The full name of the repository
@@ -602,7 +602,7 @@ func handleMemberEvent(event *github.MemberEvent) string {
 
 	return message
 }
-func handleRepositoryEvent(event *github.RepositoryEvent) string {
+func HandleRepositoryEvent(event *github.RepositoryEvent) string {
 	action := event.GetAction()          // The action performed (e.g., created, renamed, archived)
 	repoName := event.Repo.GetFullName() // Full name of the repository
 	repoURL := event.Repo.GetHTMLURL()   // Repository's HTML URL
@@ -658,7 +658,7 @@ func handleRepositoryEvent(event *github.RepositoryEvent) string {
 
 	return message
 }
-func handleReleaseEvent(event *github.ReleaseEvent) string {
+func HandleReleaseEvent(event *github.ReleaseEvent) string {
 	action := event.GetAction()               // Action performed (e.g., created, published, deleted, edited)
 	release := event.GetRelease()             // Release details
 	repoName := event.GetRepo().GetFullName() // Full name of the repository
@@ -737,7 +737,7 @@ func handleReleaseEvent(event *github.ReleaseEvent) string {
 
 	return message
 }
-func handleWatchEvent(event *github.WatchEvent) string {
+func HandleWatchEvent(event *github.WatchEvent) string {
 	action := event.GetAction()                 // The action performed (always 'started')
 	repoName := event.GetRepo().GetFullName()   // The full name of the repository (owner/repo-name)
 	repoURL := event.GetRepo().GetHTMLURL()     // The HTML URL of the repository
@@ -769,7 +769,7 @@ func handleWatchEvent(event *github.WatchEvent) string {
 
 	return message
 }
-func handleStatusEvent(event *github.StatusEvent) string {
+func HandleStatusEvent(event *github.StatusEvent) string {
 	state := event.GetState()                   // The state of the status (success, error, pending)
 	description := event.GetDescription()       // The description of the status
 	commitSHA := event.GetCommit().GetSHA()     // The commit SHA associated with the status
@@ -831,7 +831,7 @@ func handleStatusEvent(event *github.StatusEvent) string {
 
 	return message
 }
-func handleWorkflowRunEvent(e *github.WorkflowRunEvent) string {
+func HandleWorkflowRunEvent(e *github.WorkflowRunEvent) string {
 	workflowName := e.GetWorkflow().GetName()        // The name of the workflow
 	runID := e.GetWorkflowRun().GetID()              // The ID of the workflow run
 	status := e.GetWorkflowRun().GetStatus()         // The status of the workflow run (queued, in_progress, completed)
@@ -941,7 +941,7 @@ func handleWorkflowRunEvent(e *github.WorkflowRunEvent) string {
 
 	return message
 }
-func handleWorkflowJobEvent(e *github.WorkflowJobEvent) string {
+func HandleWorkflowJobEvent(e *github.WorkflowJobEvent) string {
 	jobName := e.GetWorkflowJob().GetName()
 	jobID := e.GetWorkflowJob().GetID()
 	runID := e.GetWorkflowJob().GetRunID()
@@ -1002,7 +1002,7 @@ func handleWorkflowJobEvent(e *github.WorkflowJobEvent) string {
 
 	return message
 }
-func handleWorkflowDispatchEvent(e *github.WorkflowDispatchEvent) string {
+func HandleWorkflowDispatchEvent(e *github.WorkflowDispatchEvent) string {
 	// Extract workflow dispatch event details
 	repoName := e.GetRepo().GetFullName() // Full repository name (owner/repo-name)
 	sender := e.GetSender().GetLogin()    // Username of the sender who triggered the event
@@ -1049,7 +1049,7 @@ func handleWorkflowDispatchEvent(e *github.WorkflowDispatchEvent) string {
 
 	return message
 }
-func handleTeamAddEvent(e *github.TeamAddEvent) string {
+func HandleTeamAddEvent(e *github.TeamAddEvent) string {
 	// Extract team add event details
 	teamName := e.GetTeam().GetName()     // Team name
 	repoName := e.GetRepo().GetFullName() // Repository full name (owner/repo-name)
@@ -1087,7 +1087,7 @@ func handleTeamAddEvent(e *github.TeamAddEvent) string {
 
 	return message
 }
-func handleTeamEvent(e *github.TeamEvent) string {
+func HandleTeamEvent(e *github.TeamEvent) string {
 	// Extract team event details
 	action := e.GetAction()            // Action like "created", "edited", "deleted"
 	teamName := e.GetTeam().GetName()  // Team name
@@ -1126,7 +1126,7 @@ func handleTeamEvent(e *github.TeamEvent) string {
 	return message
 }
 
-func handleStarEvent(e *github.StarEvent) string {
+func HandleStarEvent(e *github.StarEvent) string {
 	// Extract star event details
 	repoName := e.GetRepo().GetFullName() // Repository full name (owner/repo-name)
 	userName := e.GetSender().GetLogin()  // Username of the person who starred the repo
@@ -1137,7 +1137,7 @@ func handleStarEvent(e *github.StarEvent) string {
 	return message
 }
 
-func handleRepositoryDispatchEvent(e *github.RepositoryDispatchEvent) string {
+func HandleRepositoryDispatchEvent(e *github.RepositoryDispatchEvent) string {
 	// Extract event details
 	action := e.GetAction()               // Action performed
 	branch := e.Branch                    // Branch where the event occurred
@@ -1189,7 +1189,7 @@ func branchOrDefault(branch *string) string {
 	}
 	return "default branch"
 }
-func handlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent) string {
+func HandlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent) string {
 	// Extract details
 	action := e.GetAction()                    // Action performed on the comment
 	repoName := e.GetRepo().GetFullName()      // Repository full name (owner/repo-name)
@@ -1240,7 +1240,7 @@ func truncateComment(comment string, maxLength int) string {
 	return comment
 }
 
-func handlePullRequestReviewEvent(e *github.PullRequestReviewEvent) string {
+func HandlePullRequestReviewEvent(e *github.PullRequestReviewEvent) string {
 	// Extract event details
 	action := e.GetAction()                    // Action performed on the review (e.g., submitted, edited, dismissed)
 	repoName := e.GetRepo().GetFullName()      // Repository full name (owner/repo-name)
@@ -1287,7 +1287,7 @@ func handlePullRequestReviewEvent(e *github.PullRequestReviewEvent) string {
 	return message
 }
 
-func handlePingEvent(e *github.PingEvent) string {
+func HandlePingEvent(e *github.PingEvent) string {
 	var responseMessage string
 
 	// Zen Message
@@ -1317,7 +1317,7 @@ func handlePingEvent(e *github.PingEvent) string {
 	return responseMessage
 }
 
-func handlePageBuildEvent(e *github.PageBuildEvent) string {
+func HandlePageBuildEvent(e *github.PageBuildEvent) string {
 	var responseMessage string
 
 	// Page Build Details
@@ -1352,7 +1352,7 @@ func handlePageBuildEvent(e *github.PageBuildEvent) string {
 
 	return responseMessage
 }
-func handlePackageEvent(e *github.PackageEvent) string {
+func HandlePackageEvent(e *github.PackageEvent) string {
 	var responseMessage string
 
 	// Package details
@@ -1384,7 +1384,7 @@ func handlePackageEvent(e *github.PackageEvent) string {
 
 	return responseMessage
 }
-func handleOrgBlockEvent(e *github.OrgBlockEvent) string {
+func HandleOrgBlockEvent(e *github.OrgBlockEvent) string {
 	var responseMessage string
 
 	// Blocked User details
@@ -1406,7 +1406,7 @@ func handleOrgBlockEvent(e *github.OrgBlockEvent) string {
 
 	return responseMessage
 }
-func handleOrganizationEvent(e *github.OrganizationEvent) string {
+func HandleOrganizationEvent(e *github.OrganizationEvent) string {
 	var responseMessage string
 
 	// Action details
@@ -1429,7 +1429,7 @@ func handleOrganizationEvent(e *github.OrganizationEvent) string {
 	return responseMessage
 }
 
-func handleMilestoneEvent(e *github.MilestoneEvent) string {
+func HandleMilestoneEvent(e *github.MilestoneEvent) string {
 	var responseMessage string
 
 	// Milestone details
@@ -1462,7 +1462,7 @@ func handleMilestoneEvent(e *github.MilestoneEvent) string {
 	return responseMessage
 }
 
-func handleMetaEvent(e *github.MetaEvent) string {
+func HandleMetaEvent(e *github.MetaEvent) string {
 	var responseMessage string
 	if e.HookID != nil {
 		responseMessage += fmt.Sprintf("Hook ID: %d\n", *e.HookID)
@@ -1493,7 +1493,7 @@ func handleMetaEvent(e *github.MetaEvent) string {
 	return responseMessage
 }
 
-func handleMembershipEvent(e *github.MembershipEvent) string {
+func HandleMembershipEvent(e *github.MembershipEvent) string {
 	if e == nil {
 		return "<b>No membership event data available.</b>"
 	}
@@ -1536,7 +1536,7 @@ func handleMembershipEvent(e *github.MembershipEvent) string {
 	return response.String()
 }
 
-func handleDeploymentEvent(e *github.DeploymentEvent) string {
+func HandleDeploymentEvent(e *github.DeploymentEvent) string {
 	var responseMessage string
 
 	if e.Deployment != nil {
@@ -1565,7 +1565,7 @@ func handleDeploymentEvent(e *github.DeploymentEvent) string {
 	return responseMessage
 }
 
-func handleLabelEvent(e *github.LabelEvent) string {
+func HandleLabelEvent(e *github.LabelEvent) string {
 	if e == nil {
 		return "No label event data available."
 	}
@@ -1603,7 +1603,7 @@ func handleLabelEvent(e *github.LabelEvent) string {
 	return response.String()
 }
 
-func handleMarketplacePurchaseEvent(e *github.MarketplacePurchaseEvent) string {
+func HandleMarketplacePurchaseEvent(e *github.MarketplacePurchaseEvent) string {
 	if e == nil {
 		return "<b>No marketplace purchase event data available.</b>"
 	}
@@ -1649,7 +1649,7 @@ func handleMarketplacePurchaseEvent(e *github.MarketplacePurchaseEvent) string {
 	return response.String()
 }
 
-func handleGollumEvent(e *github.GollumEvent) string {
+func HandleGollumEvent(e *github.GollumEvent) string {
 	if e == nil {
 		return "No Gollum event data available."
 	}
@@ -1685,7 +1685,7 @@ func handleGollumEvent(e *github.GollumEvent) string {
 	return response.String()
 }
 
-func handleDeployKeyEvent(e *github.DeployKeyEvent) string {
+func HandleDeployKeyEvent(e *github.DeployKeyEvent) string {
 	if e == nil {
 		return "No deploy key event data available."
 	}
@@ -1720,7 +1720,7 @@ func handleDeployKeyEvent(e *github.DeployKeyEvent) string {
 	return response.String()
 }
 
-func handleCheckSuiteEvent(e *github.CheckSuiteEvent) string {
+func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) string {
 	if e == nil {
 		return "No check suite event data available."
 	}
@@ -1758,7 +1758,7 @@ func handleCheckSuiteEvent(e *github.CheckSuiteEvent) string {
 	return response.String()
 }
 
-func handleCheckRunEvent(e *github.CheckRunEvent) string {
+func HandleCheckRunEvent(e *github.CheckRunEvent) string {
 	if e == nil {
 		return "No check run event data available."
 	}
@@ -1802,7 +1802,7 @@ func handleCheckRunEvent(e *github.CheckRunEvent) string {
 	return response.String()
 }
 
-func handleDeploymentStatusEvent(e *github.DeploymentStatusEvent) string {
+func HandleDeploymentStatusEvent(e *github.DeploymentStatusEvent) string {
 	var responseMessage string
 
 	// Include deployment status details
@@ -1836,7 +1836,7 @@ func handleDeploymentStatusEvent(e *github.DeploymentStatusEvent) string {
 	return responseMessage
 }
 
-func handleSecurityAdvisoryEvent(e *github.SecurityAdvisoryEvent) string {
+func HandleSecurityAdvisoryEvent(e *github.SecurityAdvisoryEvent) string {
 	if e == nil {
 		return "No security advisory event data available."
 	}

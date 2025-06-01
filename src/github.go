@@ -1,8 +1,9 @@
-package str
+package src
 
 import (
 	"fmt"
-	"github-webhook/GithubEvent/config"
+	"github-webhook/src/config"
+	"github-webhook/src/utils"
 	"github.com/google/go-github/v71/github"
 	"log"
 	"net/http"
@@ -34,97 +35,97 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	var message string
 	switch e := event.(type) {
 	case *github.PushEvent:
-		message = handlePushEvent(e)
+		message = utils.HandlePushEvent(e)
 	case *github.PullRequestEvent:
-		message = handlePullRequestEvent(e)
+		message = utils.HandlePullRequestEvent(e)
 	case *github.IssuesEvent:
-		message = handleIssuesEvent(e)
+		message = utils.HandleIssuesEvent(e)
 	case *github.PingEvent:
-		message = handlePingEvent(e)
+		message = utils.HandlePingEvent(e)
 
 	// Handle review-related events
 	case *github.PullRequestReviewEvent:
-		message = handlePullRequestReviewEvent(e)
+		message = utils.HandlePullRequestReviewEvent(e)
 	case *github.PullRequestReviewCommentEvent:
-		message = handlePullRequestReviewCommentEvent(e)
+		message = utils.HandlePullRequestReviewCommentEvent(e)
 
 	// Handle repository and organization events
 	case *github.RepositoryEvent:
-		message = handleRepositoryEvent(e)
+		message = utils.HandleRepositoryEvent(e)
 	case *github.RepositoryDispatchEvent:
-		message = handleRepositoryDispatchEvent(e)
+		message = utils.HandleRepositoryDispatchEvent(e)
 	case *github.OrganizationEvent:
-		message = handleOrganizationEvent(e)
+		message = utils.HandleOrganizationEvent(e)
 	case *github.OrgBlockEvent:
-		message = handleOrgBlockEvent(e)
+		message = utils.HandleOrgBlockEvent(e)
 
 	// Handle CI/CD and deployment-related events
 	case *github.CheckRunEvent:
-		message = handleCheckRunEvent(e)
+		message = utils.HandleCheckRunEvent(e)
 	case *github.CheckSuiteEvent:
-		message = handleCheckSuiteEvent(e)
+		message = utils.HandleCheckSuiteEvent(e)
 	case *github.WorkflowRunEvent:
-		message = handleWorkflowRunEvent(e)
+		message = utils.HandleWorkflowRunEvent(e)
 	case *github.WorkflowJobEvent:
-		message = handleWorkflowJobEvent(e)
+		message = utils.HandleWorkflowJobEvent(e)
 	case *github.DeploymentEvent:
-		message = handleDeploymentEvent(e)
+		message = utils.HandleDeploymentEvent(e)
 	case *github.DeploymentStatusEvent:
-		message = handleDeploymentStatusEvent(e)
+		message = utils.HandleDeploymentStatusEvent(e)
 
 	// Handle advisory and security-related events
 	case *github.SecurityAdvisoryEvent:
-		message = handleSecurityAdvisoryEvent(e)
+		message = utils.HandleSecurityAdvisoryEvent(e)
 	case *github.MembershipEvent:
-		message = handleMembershipEvent(e)
+		message = utils.HandleMembershipEvent(e)
 	case *github.MilestoneEvent:
-		message = handleMilestoneEvent(e)
+		message = utils.HandleMilestoneEvent(e)
 
 	// Handle less frequent or low-priority events
 	case *github.CommitCommentEvent:
-		message = handleCommitCommentEvent(e)
+		message = utils.HandleCommitCommentEvent(e)
 	case *github.ForkEvent:
-		message = handleForkEvent(e)
+		message = utils.HandleForkEvent(e)
 	case *github.ReleaseEvent:
-		message = handleReleaseEvent(e)
+		message = utils.HandleReleaseEvent(e)
 	case *github.StarEvent:
-		message = handleStarEvent(e)
+		message = utils.HandleStarEvent(e)
 	case *github.WatchEvent:
-		message = handleWatchEvent(e)
+		message = utils.HandleWatchEvent(e)
 	case *github.LabelEvent:
-		message = handleLabelEvent(e)
+		message = utils.HandleLabelEvent(e)
 	case *github.MarketplacePurchaseEvent:
-		message = handleMarketplacePurchaseEvent(e)
+		message = utils.HandleMarketplacePurchaseEvent(e)
 	case *github.PageBuildEvent:
-		message = handlePageBuildEvent(e)
+		message = utils.HandlePageBuildEvent(e)
 	case *github.DeployKeyEvent:
-		message = handleDeployKeyEvent(e)
+		message = utils.HandleDeployKeyEvent(e)
 	case *github.StarredRepository:
-		message = handleStarredEvent(e)
+		message = utils.HandleStarredEvent(e)
 	case *github.CreateEvent:
-		message = handleCreateEvent(e)
+		message = utils.HandleCreateEvent(e)
 	case *github.DeleteEvent:
-		message = handleDeleteEvent(e)
+		message = utils.HandleDeleteEvent(e)
 	case *github.IssueCommentEvent:
-		message = handleIssueCommentEvent(e)
+		message = utils.HandleIssueCommentEvent(e)
 	case *github.MemberEvent:
-		message = handleMemberEvent(e)
+		message = utils.HandleMemberEvent(e)
 	case *github.PublicEvent:
-		message = handlePublicEvent(e)
+		message = utils.HandlePublicEvent(e)
 	case *github.StatusEvent:
-		message = handleStatusEvent(e)
+		message = utils.HandleStatusEvent(e)
 	case *github.WorkflowDispatchEvent:
-		message = handleWorkflowDispatchEvent(e)
+		message = utils.HandleWorkflowDispatchEvent(e)
 	case *github.TeamAddEvent:
-		message = handleTeamAddEvent(e)
+		message = utils.HandleTeamAddEvent(e)
 	case *github.TeamEvent:
-		message = handleTeamEvent(e)
+		message = utils.HandleTeamEvent(e)
 	case *github.PackageEvent:
-		message = handlePackageEvent(e)
+		message = utils.HandlePackageEvent(e)
 	case *github.GollumEvent:
-		message = handleGollumEvent(e)
+		message = utils.HandleGollumEvent(e)
 	case *github.MetaEvent:
-		message = handleMetaEvent(e)
+		message = utils.HandleMetaEvent(e)
 	// Catch-all fallback for unhandled events
 	default:
 		log.Printf("Unhandled event type: %s\n", github.WebHookType(r))
@@ -137,7 +138,7 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sendToTelegram(chatID, message)
+	err = utils.SendToTelegram(chatID, message)
 	if err != nil {
 		http.Error(w, strings.ReplaceAll(err.Error(), config.BotToken, "$Bot"), http.StatusInternalServerError)
 		return
