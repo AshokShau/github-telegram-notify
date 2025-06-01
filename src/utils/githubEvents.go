@@ -1090,38 +1090,78 @@ func HandleMarketplacePurchaseEvent(e *github.MarketplacePurchaseEvent) string {
 
 func HandleGollumEvent(e *github.GollumEvent) string {
 	if e == nil {
-		return "No Gollum event data available."
+		return "📚 <b>No wiki update data available</b>"
 	}
 
-	var response strings.Builder
-
-	// Repository Info
-	if e.Repo != nil && e.Repo.Name != nil {
-		response.WriteString(fmt.Sprintf("Repository: %s\n", *e.Repo.Name))
+	var msg strings.Builder
+	msg.WriteString("📚 <b>Wiki Update</b>\n")
+	if repo := e.GetRepo(); repo != nil {
+		msg.WriteString(fmt.Sprintf("<b>Repository:</b> <a href=\"%s\">%s</a>\n",
+			repo.GetHTMLURL(),
+			repo.GetFullName()))
 	}
 
-	// Sender Info
-	if e.Sender != nil && e.Sender.Login != nil {
-		response.WriteString(fmt.Sprintf("Sender: %s\n", *e.Sender.Login))
+	if org := e.GetOrg(); org != nil {
+		msg.WriteString(fmt.Sprintf("<b>Organization:</b> %s\n", org.GetLogin()))
 	}
 
-	// Pages Info
+	if sender := e.GetSender(); sender != nil {
+		msg.WriteString(fmt.Sprintf("<b>Edited by:</b> %s\n", sender.GetLogin()))
+	}
+
 	if e.Pages != nil && len(e.Pages) > 0 {
-		response.WriteString("Wiki Pages:\n")
+		msg.WriteString("\n<b>Page Changes:</b>\n")
 		for _, page := range e.Pages {
-			if page.Title != nil {
-				response.WriteString(fmt.Sprintf("- Title: %s\n", *page.Title))
+			if page == nil {
+				continue
 			}
+			action := "unknown"
 			if page.Action != nil {
-				response.WriteString(fmt.Sprintf("  Action: %s\n", *page.Action))
+				action = *page.Action
 			}
-			if page.HTMLURL != nil {
-				response.WriteString(fmt.Sprintf("  URL: %s\n", *page.HTMLURL))
+			emoji := getActionEmoji(action)
+			pageTitle := ""
+			if page.Title != nil {
+				pageTitle = *page.Title
+			} else if page.PageName != nil {
+				pageTitle = *page.PageName
 			}
+
+			if pageTitle != "" {
+				msg.WriteString(fmt.Sprintf("%s <b>%s</b> (%s)\n",
+					emoji,
+					pageTitle,
+					action))
+			}
+			if page.Summary != nil && *page.Summary != "" {
+				msg.WriteString(fmt.Sprintf("<i>Summary:</i> %s\n", *page.Summary))
+			}
+			
+			if page.SHA != nil && *page.SHA != "" {
+				msg.WriteString(fmt.Sprintf("<i>Revision:</i> %s\n", (*page.SHA)[:7]))
+			}
+			if page.HTMLURL != nil && *page.HTMLURL != "" {
+				msg.WriteString(fmt.Sprintf("<a href=\"%s\">View Page</a>\n", *page.HTMLURL))
+			}
+
+			msg.WriteString("\n")
 		}
 	}
 
-	return response.String()
+	return msg.String()
+}
+
+func getActionEmoji(action string) string {
+	switch action {
+	case "created":
+		return "🆕"
+	case "edited":
+		return "✏️"
+	case "deleted":
+		return "🗑️"
+	default:
+		return "🔹"
+	}
 }
 
 func HandleDeployKeyEvent(e *github.DeployKeyEvent) string {
