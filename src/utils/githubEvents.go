@@ -1214,25 +1214,33 @@ func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) string {
 	}
 
 	suite := e.GetCheckSuite()
-	msg := fmt.Sprintf("✅ <b>Check Suite %s</b>\n", e.GetAction())
+	var msg strings.Builder
+
+	action := html.EscapeString(strings.Title(e.GetAction()))
+	msg.WriteString(fmt.Sprintf("✅ <b>Check Suite: %s</b>\n\n", action))
 
 	if suite != nil {
-		msg += fmt.Sprintf("<b>Status:</b> %s\n", suite.GetStatus())
+		status := html.EscapeString(suite.GetStatus())
+		msg.WriteString(fmt.Sprintf("• <b>Status:</b> %s\n", status))
+
 		if conclusion := suite.GetConclusion(); conclusion != "" {
-			msg += fmt.Sprintf("<b>Result:</b> %s\n", conclusion)
+			msg.WriteString(fmt.Sprintf("• <b>Result:</b> %s\n", html.EscapeString(conclusion)))
 		}
+
 		if url := suite.GetURL(); url != "" {
-			msg += fmt.Sprintf("<a href=\"%s\">View Details</a>\n", url)
+			msg.WriteString(fmt.Sprintf("\n<a href=\"%s\">🔗 View Details</a>\n", html.EscapeString(url)))
 		}
 	}
 
-	msg += fmt.Sprintf("<b>Repo:</b> %s\n", e.GetRepo().GetName())
+	repo := html.EscapeString(e.GetRepo().GetFullName())
+	msg.WriteString(fmt.Sprintf("\n<b>Repository:</b> %s\n", repo))
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		username := html.EscapeString(sender.GetLogin())
+		msg.WriteString(fmt.Sprintf("<b>Triggered by:</b> @%s", username))
 	}
 
-	return msg
+	return msg.String()
 }
 
 func HandleCheckRunEvent(e *github.CheckRunEvent) string {
@@ -1241,37 +1249,45 @@ func HandleCheckRunEvent(e *github.CheckRunEvent) string {
 	}
 
 	check := e.GetCheckRun()
-	msg := fmt.Sprintf("⚙️ <b>Check Run %s</b>\n", e.GetAction())
+	var msg strings.Builder
+
+	action := html.EscapeString(strings.Title(e.GetAction()))
+	msg.WriteString(fmt.Sprintf("⚙️ <b>Check Run: %s</b>\n\n", action))
 
 	if check != nil {
-		msg += fmt.Sprintf("<b>Name:</b> %s\n", check.GetName())
-		msg += fmt.Sprintf("<b>Status:</b> %s\n", check.GetStatus())
+		name := html.EscapeString(check.GetName())
+		status := html.EscapeString(check.GetStatus())
+		msg.WriteString(fmt.Sprintf("• <b>Name:</b> %s\n", name))
+		msg.WriteString(fmt.Sprintf("• <b>Status:</b> %s\n", status))
 
 		if conclusion := check.GetConclusion(); conclusion != "" {
-			msg += fmt.Sprintf("<b>Result:</b> %s\n", conclusion)
+			msg.WriteString(fmt.Sprintf("• <b>Result:</b> %s\n", html.EscapeString(conclusion)))
 		}
 
 		if !check.GetStartedAt().IsZero() {
-			msg += fmt.Sprintf("<b>Started:</b> %s\n", check.GetStartedAt().Format("2006-01-02 15:04"))
+			msg.WriteString(fmt.Sprintf("• <b>Started:</b> %s\n", check.GetStartedAt().Format("2006-01-02 15:04")))
 		}
 
 		if !check.GetCompletedAt().IsZero() {
-			msg += fmt.Sprintf("<b>Completed:</b> %s\n", check.GetCompletedAt().Format("2006-01-02 15:04"))
+			msg.WriteString(fmt.Sprintf("• <b>Completed:</b> %s\n", check.GetCompletedAt().Format("2006-01-02 15:04")))
 		}
 
 		if url := check.GetHTMLURL(); url != "" {
-			msg += fmt.Sprintf("<a href=\"%s\">View Details</a>\n", url)
+			msg.WriteString(fmt.Sprintf("\n<a href=\"%s\">🔗 View Details</a>\n", html.EscapeString(url)))
 		}
 	}
 
-	msg += fmt.Sprintf("<b>Repo:</b> %s\n", e.GetRepo().GetName())
+	repo := html.EscapeString(e.GetRepo().GetFullName())
+	msg.WriteString(fmt.Sprintf("\n<b>Repository:</b> %s\n", repo))
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		username := html.EscapeString(sender.GetLogin())
+		msg.WriteString(fmt.Sprintf("<b>Triggered by:</b> @%s", username))
 	}
 
-	return msg
+	return msg.String()
 }
+
 func HandleDeploymentStatusEvent(e *github.DeploymentStatusEvent) string {
 	if e == nil {
 		return "🚦 <b>No deployment status data</b>"
