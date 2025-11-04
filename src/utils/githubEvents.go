@@ -155,7 +155,7 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 		}
 		commitURL := fmt.Sprintf("%s/commit/%s", repoURL, commit.GetID())
 		msg += fmt.Sprintf(
-			"\\- [`%s`](%s): %s by @%s\n",
+			"\\- [`%s`](%s): %s by %s\n",
 			EscapeMarkdownV2(shortSHA),
 			EscapeMarkdownV2URL(commitURL),
 			FormatTextWithMarkdown(commit.GetMessage()),
@@ -1214,7 +1214,7 @@ func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) (string, *InlineKeyboardMa
 
 	if sender := e.GetSender(); sender != nil {
 		username := sender.GetLogin()
-		msg.WriteString(fmt.Sprintf("*Triggered by:* @%s", EscapeMarkdownV2(username)))
+		msg.WriteString(fmt.Sprintf("*Triggered by:* %s", EscapeMarkdownV2(username)))
 	}
 
 	return FormatMessageWithButton(msg.String(), "View Details", e.GetCheckSuite().GetURL())
@@ -1254,7 +1254,7 @@ func HandleCheckRunEvent(e *github.CheckRunEvent) (string, *InlineKeyboardMarkup
 
 	if sender := e.GetSender(); sender != nil {
 		username := sender.GetLogin()
-		msg.WriteString(fmt.Sprintf("*Triggered by:* @%s", EscapeMarkdownV2(username)))
+		msg.WriteString(fmt.Sprintf("*Triggered by:* %s", EscapeMarkdownV2(username)))
 	}
 
 	return FormatMessageWithButton(msg.String(), "View Details", e.GetCheckRun().GetHTMLURL())
