@@ -125,7 +125,7 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 	repoURL := event.Repo.GetHTMLURL()
 	branch := strings.TrimPrefix(event.GetRef(), "refs/heads/")
 	compareURL := event.GetCompare()
-	
+
 	var commits []*github.HeadCommit
 	if len(event.Commits) > 0 {
 		commits = event.Commits
@@ -184,6 +184,10 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 		)
 	}
 
+	if commitCount == 1 {
+		commitURL := fmt.Sprintf("%s/commit/%s", repoURL, commits[0].GetID())
+		return FormatMessageWithButton(msg, "View Commit", commitURL)
+	}
 	return FormatMessageWithButton(msg, "View Commits", compareURL)
 }
 
