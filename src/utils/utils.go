@@ -1,6 +1,10 @@
 package utils
 
-import "strings"
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
 
 // EscapeMarkdownV2 escapes characters for Telegram's MarkdownV2 format.
 func EscapeMarkdownV2(text string) string {
@@ -34,4 +38,55 @@ func EscapeMarkdownV2URL(text string) string {
 		")", "\\)",
 	)
 	return replacer.Replace(text)
+}
+
+// FormatTextWithMarkdown preserves Markdown links and code blocks while escaping other special characters.
+func FormatTextWithMarkdown(text string) string {
+	re := regexp.MustCompile("(?s)\\[[^\\]]+\\]\\([^\\)]+\\)|`[^`]+`|```.+?```")
+
+	var originals []string
+	tempBody := re.ReplaceAllStringFunc(text, func(match string) string {
+		originals = append(originals, match)
+		return fmt.Sprintf("___PLACEHOLDER_%d___", len(originals)-1)
+	})
+
+	escapedBody := EscapeMarkdownV2(tempBody)
+	for i, original := range originals {
+		placeholder := fmt.Sprintf("___PLACEHOLDER_%d___", i)
+		escapedPlaceholder := EscapeMarkdownV2(placeholder)
+		escapedBody = strings.Replace(escapedBody, escapedPlaceholder, original, 1)
+	}
+
+	return escapedBody
+}
+
+func FormatReleaseBody(body string) string {
+	formattedText := FormatTextWithMarkdown(body)
+	lines := strings.Split(formattedText, "\n")
+	const maxLines = 10
+	const maxChars = 800
+	isLong := len(lines) > maxLines || len(formattedText) > maxChars
+
+	var finalBody strings.Builder
+
+	if !isLong {
+		for _, line := range lines {
+			finalBody.WriteString(">" + line + "\n")
+		}
+		return strings.TrimSuffix(finalBody.String(), "\n")
+	}
+
+	splitIndex := 5
+
+	for i := 0; i < splitIndex && i < len(lines); i++ {
+		finalBody.WriteString(">" + lines[i] + "\n")
+	}
+
+	finalBody.WriteString("**>\n")
+
+	for i := splitIndex; i < len(lines); i++ {
+		finalBody.WriteString(">" + lines[i] + "\n")
+	}
+
+	return strings.TrimSuffix(finalBody.String(), "\n") + "||"
 }

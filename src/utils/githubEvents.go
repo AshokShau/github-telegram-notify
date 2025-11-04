@@ -31,7 +31,7 @@ func HandleIssuesEvent(event *github.IssuesEvent) (string, *InlineKeyboardMarkup
 	case "opened", "edited":
 		msg += fmt.Sprintf("*Title:* %s\n", EscapeMarkdownV2(title))
 		if body := issue.GetBody(); body != "" {
-			msg += fmt.Sprintf("*Description:*\n%s\n", EscapeMarkdownV2(body))
+			msg += fmt.Sprintf("*Description:*\n%s\n", FormatTextWithMarkdown(body))
 		}
 	case "closed":
 		if closer := issue.GetClosedBy(); closer != nil {
@@ -84,7 +84,7 @@ func HandlePullRequestEvent(event *github.PullRequestEvent) (string, *InlineKeyb
 	// Add action-specific details
 	switch action {
 	case "opened":
-		msg += fmt.Sprintf("*Description:*\n%s\n", EscapeMarkdownV2(pr.GetBody()))
+		msg += fmt.Sprintf("*Description:*\n%s\n", FormatTextWithMarkdown(pr.GetBody()))
 	case "closed":
 		if pr.GetMerged() {
 			msg += "✅ Merged\n"
@@ -94,7 +94,7 @@ func HandlePullRequestEvent(event *github.PullRequestEvent) (string, *InlineKeyb
 	case "reopened":
 		msg += "🔄 Reopened\n"
 	case "edited":
-		msg += fmt.Sprintf("✏️ Edited\n*Description:*\n%s\n", EscapeMarkdownV2(pr.GetBody()))
+		msg += fmt.Sprintf("✏️ Edited\n*Description:*\n%s\n", FormatTextWithMarkdown(pr.GetBody()))
 	case "assigned":
 		var assignees []string
 		for _, a := range pr.Assignees {
@@ -158,7 +158,7 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 			"\\- [`%s`](%s): %s by @%s\n",
 			EscapeMarkdownV2(shortSHA),
 			EscapeMarkdownV2URL(commitURL),
-			EscapeMarkdownV2(commit.GetMessage()),
+			FormatTextWithMarkdown(commit.GetMessage()),
 			EscapeMarkdownV2(commit.Author.GetName()),
 		)
 	}
@@ -195,7 +195,7 @@ func HandleCreateEvent(event *github.CreateEvent) (string, *InlineKeyboardMarkup
 
 	// Add description if available
 	if desc := event.GetDescription(); desc != "" {
-		msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
+		msg += fmt.Sprintf("*Description:* %s\n", FormatTextWithMarkdown(desc))
 	}
 
 	// Add default branch for repository creation events
@@ -282,7 +282,7 @@ func HandleCommitCommentEvent(event *github.CommitCommentEvent) (string, *Inline
 
 	// Add comment for created/edited actions
 	if action == "created" || action == "edited" {
-		msg += fmt.Sprintf("*Comment:* %s", EscapeMarkdownV2(comment))
+		msg += fmt.Sprintf("*Comment:* %s", FormatTextWithMarkdown(comment))
 	}
 
 	return FormatMessageWithButton(msg, "View Comment", event.Comment.GetHTMLURL())
@@ -330,7 +330,7 @@ func HandleIssueCommentEvent(event *github.IssueCommentEvent) (string, *InlineKe
 
 	// Add comment for created/edited actions
 	if action == "created" || action == "edited" {
-		msg += fmt.Sprintf("*Comment:* %s", EscapeMarkdownV2(comment.GetBody()))
+		msg += fmt.Sprintf("*Comment:* %s", FormatTextWithMarkdown(comment.GetBody()))
 	}
 
 	return FormatMessageWithButton(msg, "View Comment", comment.GetHTMLURL())
@@ -448,7 +448,7 @@ func HandleReleaseEvent(event *github.ReleaseEvent) (string, *InlineKeyboardMark
 
 	// Add description for created/edited actions
 	if (action == "created" || action == "edited") && release.GetBody() != "" {
-		msg += fmt.Sprintf("\n*Notes:*\n%s", EscapeMarkdownV2(release.GetBody()))
+		msg += fmt.Sprintf("\n*Notes:*\n%s", FormatReleaseBody(release.GetBody()))
 	}
 
 	return FormatMessageWithButton(msg, "View Release", release.GetHTMLURL())
@@ -792,7 +792,7 @@ func HandlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent
 		EscapeMarkdownV2(pr.GetTitle()),
 		pr.GetNumber(),
 		EscapeMarkdownV2URL(pr.GetHTMLURL()),
-		EscapeMarkdownV2(truncateText(comment.GetBody(), 120)),
+		FormatTextWithMarkdown(truncateText(comment.GetBody(), 120)),
 	)
 	return FormatMessageWithButton(msg, "View Comment", comment.GetHTMLURL())
 }
@@ -948,7 +948,7 @@ func HandleMilestoneEvent(e *github.MilestoneEvent) (string, *InlineKeyboardMark
 	if milestone != nil {
 		msg += fmt.Sprintf("*Title:* %s\n", EscapeMarkdownV2(milestone.GetTitle()))
 		if desc := milestone.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
+			msg += fmt.Sprintf("*Description:* %s\n", FormatTextWithMarkdown(desc))
 		}
 	}
 
@@ -1002,7 +1002,7 @@ func HandleMembershipEvent(e *github.MembershipEvent) (string, *InlineKeyboardMa
 	if team := e.GetTeam(); team != nil {
 		msg += fmt.Sprintf("*Team:* %s\n", EscapeMarkdownV2(team.GetName()))
 		if desc := team.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
+			msg += fmt.Sprintf("*Description:* %s\n", FormatTextWithMarkdown(desc))
 		}
 	}
 
@@ -1019,7 +1019,7 @@ func HandleDeploymentEvent(e *github.DeploymentEvent) (string, *InlineKeyboardMa
 	if deploy := e.GetDeployment(); deploy != nil {
 		msg += fmt.Sprintf("*ID:* %d\n", deploy.GetID())
 		if desc := deploy.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
+			msg += fmt.Sprintf("*Description:* %s\n", FormatTextWithMarkdown(desc))
 		}
 	}
 
@@ -1045,7 +1045,7 @@ func HandleLabelEvent(e *github.LabelEvent) (string, *InlineKeyboardMarkup) {
 		msg += fmt.Sprintf("*Name:* %s\n", EscapeMarkdownV2(label.GetName()))
 		msg += fmt.Sprintf("*Color:* `#%s`\n", EscapeMarkdownV2(label.GetColor()))
 		if desc := label.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
+			msg += fmt.Sprintf("*Description:* %s\n", FormatTextWithMarkdown(desc))
 		}
 	}
 
@@ -1054,7 +1054,7 @@ func HandleLabelEvent(e *github.LabelEvent) (string, *InlineKeyboardMarkup) {
 			msg += fmt.Sprintf("*Previous Name:* %s\n", EscapeMarkdownV2(title.GetFrom()))
 		}
 		if body := changes.GetBody(); body != nil && body.GetFrom() != "" {
-			msg += fmt.Sprintf("*Previous Desc:* %s\n", EscapeMarkdownV2(body.GetFrom()))
+			msg += fmt.Sprintf("*Previous Desc:* %s\n", FormatTextWithMarkdown(body.GetFrom()))
 		}
 	}
 
@@ -1137,7 +1137,7 @@ func HandleGollumEvent(e *github.GollumEvent) (string, *InlineKeyboardMarkup) {
 					EscapeMarkdownV2(action)))
 			}
 			if page.Summary != nil && *page.Summary != "" {
-				msg.WriteString(fmt.Sprintf("_Summary:_ %s\n", EscapeMarkdownV2(*page.Summary)))
+				msg.WriteString(fmt.Sprintf("_Summary:_ %s\n", FormatTextWithMarkdown(*page.Summary)))
 			}
 
 			if page.SHA != nil && *page.SHA != "" {
@@ -1269,7 +1269,7 @@ func HandleDeploymentStatusEvent(e *github.DeploymentStatusEvent) (string, *Inli
 	msg := fmt.Sprintf("🚦 *Deployment %s*\n\n", EscapeMarkdownV2(status.GetState()))
 
 	if desc := status.GetDescription(); desc != "" {
-		msg += fmt.Sprintf("*Status:* %s\n", EscapeMarkdownV2(desc))
+		msg += fmt.Sprintf("*Status:* %s\n", FormatTextWithMarkdown(desc))
 	}
 
 	msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(e.GetRepo().GetName()))
@@ -1290,7 +1290,7 @@ func HandleSecurityAdvisoryEvent(e *github.SecurityAdvisoryEvent) (string, *Inli
 	msg := fmt.Sprintf("⚠️ *Security Advisory %s*\n\n", EscapeMarkdownV2(e.GetAction()))
 
 	if adv != nil {
-		msg += fmt.Sprintf("*Summary:* %s\n", EscapeMarkdownV2(adv.GetSummary()))
+		msg += fmt.Sprintf("*Summary:* %s\n", FormatTextWithMarkdown(adv.GetSummary()))
 		if sev := adv.GetSeverity(); sev != "" {
 			msg += fmt.Sprintf("*Severity:* %s\n", EscapeMarkdownV2(sev))
 		}
