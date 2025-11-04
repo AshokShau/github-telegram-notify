@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"github-webhook/src/config"
 	"github-webhook/src/utils"
-	"github.com/google/go-github/v71/github"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/google/go-github/v77/github"
 )
 
 // GitHubWebhook processes GitHub webhooks

@@ -6,7 +6,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v77/github"
 )
 
 func HandleIssuesEvent(event *github.IssuesEvent) string {
