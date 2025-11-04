@@ -26,3 +26,12 @@ func EscapeMarkdownV2(text string) string {
 	)
 	return replacer.Replace(text)
 }
+
+// EscapeMarkdownV2URL escapes characters for the URL part of a MarkdownV2 link.
+func EscapeMarkdownV2URL(text string) string {
+	replacer := strings.NewReplacer(
+		"(", "\\(",
+		")", "\\)",
+	)
+	return replacer.Replace(text)
+}

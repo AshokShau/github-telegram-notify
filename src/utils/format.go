@@ -17,9 +17,9 @@ func FormatMessageWithButton(message, buttonText, buttonURL string) (string, *In
 }
 
 func FormatRepo(repoFullName string) string {
-	return fmt.Sprintf("[%s](https://github.com/%s)", EscapeMarkdownV2(repoFullName), repoFullName)
+	return fmt.Sprintf("[%s](https://github.com/%s)", EscapeMarkdownV2(repoFullName), EscapeMarkdownV2URL(repoFullName))
 }
 
 func FormatUser(userLogin string) string {
-	return fmt.Sprintf("[%s](https://github.com/%s)", EscapeMarkdownV2(userLogin), userLogin)
+	return fmt.Sprintf("[%s](https://github.com/%s)", EscapeMarkdownV2(userLogin), EscapeMarkdownV2URL(userLogin))
 }

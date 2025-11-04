@@ -50,6 +50,8 @@ func SendToTelegram(chatID, message string, markup *InlineKeyboardMarkup) error 
 		return err
 	}
 
+	log.Printf("Sending to Telegram. Payload: %s", string(payloadBytes))
+
 	req, err := http.NewRequest("POST", telegramURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		log.Println("Error creating request:", err)

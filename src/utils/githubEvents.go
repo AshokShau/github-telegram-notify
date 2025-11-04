@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"html"
 	"strings"
 
 	"github.com/google/go-github/v77/github"
@@ -123,6 +122,7 @@ func HandlePullRequestEvent(event *github.PullRequestEvent) (string, *InlineKeyb
 
 func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 	repo := event.Repo.GetName()
+	repoURL := event.Repo.GetHTMLURL()
 	branch := strings.TrimPrefix(event.GetRef(), "refs/heads/")
 	compareURL := event.GetCompare()
 	commitCount := len(event.Commits)
@@ -131,9 +131,13 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 		return "", nil
 	}
 
+	var commitPlural string
+	if commitCount > 1 {
+		commitPlural = "s"
+	}
 	msg := fmt.Sprintf(
-		"🔨 *%d new commit(s) to* `%s:%s`\n\n",
-		commitCount, EscapeMarkdownV2(repo), EscapeMarkdownV2(branch),
+		"🔨 *%d new commit%s to* `%s:%s`\n\n",
+		commitCount, commitPlural, EscapeMarkdownV2(repo), EscapeMarkdownV2(branch),
 	)
 
 	if event.GetCreated() {
@@ -149,11 +153,11 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 		if len(shortSHA) > 7 {
 			shortSHA = shortSHA[:7]
 		}
+		commitURL := fmt.Sprintf("%s/commit/%s", repoURL, commit.GetID())
 		msg += fmt.Sprintf(
-			"\\- [`%s`](%s/commit/%s): %s by @%s\n",
+			"\\- [`%s`](%s): %s by @%s\n",
 			EscapeMarkdownV2(shortSHA),
-			event.Repo.GetHTMLURL(),
-			commit.GetID(),
+			EscapeMarkdownV2URL(commitURL),
 			EscapeMarkdownV2(commit.GetMessage()),
 			EscapeMarkdownV2(commit.Author.GetName()),
 		)
@@ -242,7 +246,7 @@ func HandleForkEvent(event *github.ForkEvent) (string, *InlineKeyboardMarkup) {
 		event.Repo.GetForksCount(),
 	)
 
-	return FormatMessageWithButton(msg, "View Fork", fmt.Sprintf("https://github.com/%s", forkedRepo))
+	return FormatMessageWithButton(msg, "View Fork", fmt.Sprintf("https://github.com/%s", EscapeMarkdownV2URL(forkedRepo)))
 }
 func HandleCommitCommentEvent(event *github.CommitCommentEvent) (string, *InlineKeyboardMarkup) {
 	comment := event.Comment.GetBody()
@@ -250,7 +254,7 @@ func HandleCommitCommentEvent(event *github.CommitCommentEvent) (string, *Inline
 	repo := event.Repo.GetFullName()
 	sender := event.Sender.GetLogin()
 	action := event.GetAction()
-	commitURL := fmt.Sprintf("https://github.com/%s/commit/%s", repo, commitSHA)
+	commitURL := fmt.Sprintf("https://github.com/%s/commit/%s", EscapeMarkdownV2URL(repo), EscapeMarkdownV2URL(commitSHA))
 
 	// Action emojis
 	actionEmoji := map[string]string{
@@ -313,14 +317,14 @@ func HandleIssueCommentEvent(event *github.IssueCommentEvent) (string, *InlineKe
 
 	// Base message
 	msg := fmt.Sprintf(
-		"%s *%s %s comment on* [%s#%d](%s)\n\n"+
+		"%s *%s %s comment on* [%s\\#%d](%s)\n\n"+
 			"*Title:* %s\n",
 		actionEmoji,
 		FormatUser(sender),
 		EscapeMarkdownV2(action),
 		EscapeMarkdownV2(repo),
 		issue.GetNumber(),
-		issue.GetHTMLURL(),
+		EscapeMarkdownV2URL(issue.GetHTMLURL()),
 		EscapeMarkdownV2(issue.GetTitle()),
 	)
 
@@ -384,7 +388,7 @@ func HandleRepositoryEvent(event *github.RepositoryEvent) (string, *InlineKeyboa
 		desc  string
 	}{
 		"created":    {"🎉", "created"},
-		"renamed":    {"🔄", fmt.Sprintf("renamed to %s", event.Repo.GetName())},
+		"renamed":    {"🔄", fmt.Sprintf("renamed to %s", EscapeMarkdownV2(event.Repo.GetName()))},
 		"archived":   {"🔒", "archived"},
 		"unarchived": {"🔓", "unarchived"},
 	}[action]
@@ -488,7 +492,7 @@ func HandleStatusEvent(event *github.StatusEvent) (string, *InlineKeyboardMarkup
 		stateEmoji,
 		EscapeMarkdownV2(strings.Title(state)),
 		EscapeMarkdownV2(event.GetCommit().GetSHA()[:7]),
-		event.GetCommit().GetHTMLURL(),
+		EscapeMarkdownV2URL(event.GetCommit().GetHTMLURL()),
 		FormatRepo(event.GetRepo().GetFullName()),
 		EscapeMarkdownV2(event.GetDescription()),
 		FormatUser(event.GetSender().GetLogin()),
@@ -780,14 +784,14 @@ func HandlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent
 	msg := fmt.Sprintf(
 		"%s *PR Review Comment %s*\n\n"+
 			"*Repository:* %s\n"+
-			"*PR:* [%s#%d](%s)\n"+
+			"*PR:* [%s\\#%d](%s)\n"+
 			"*Comment:* %s\n",
 		actionEmoji,
 		EscapeMarkdownV2(action),
 		FormatRepo(repo),
 		EscapeMarkdownV2(pr.GetTitle()),
 		pr.GetNumber(),
-		pr.GetHTMLURL(),
+		EscapeMarkdownV2URL(pr.GetHTMLURL()),
 		EscapeMarkdownV2(truncateText(comment.GetBody(), 120)),
 	)
 	return FormatMessageWithButton(msg, "View Comment", comment.GetHTMLURL())
@@ -819,7 +823,7 @@ func HandlePullRequestReviewEvent(e *github.PullRequestReviewEvent) (string, *In
 	msg := fmt.Sprintf(
 		"%s *PR Review %s*\n\n"+
 			"*Repository:* %s\n"+
-			"*PR:* [%s#%d](%s)\n"+
+			"*PR:* [%s\\#%d](%s)\n"+
 			"*State:* %s\n"+
 			"*By:* %s\n",
 		stateEmoji,
@@ -827,7 +831,7 @@ func HandlePullRequestReviewEvent(e *github.PullRequestReviewEvent) (string, *In
 		FormatRepo(e.GetRepo().GetFullName()),
 		EscapeMarkdownV2(pr.GetTitle()),
 		pr.GetNumber(),
-		pr.GetHTMLURL(),
+		EscapeMarkdownV2URL(pr.GetHTMLURL()),
 		EscapeMarkdownV2(review.GetState()),
 		FormatUser(e.GetSender().GetLogin()),
 	)
@@ -1140,7 +1144,7 @@ func HandleGollumEvent(e *github.GollumEvent) (string, *InlineKeyboardMarkup) {
 				msg.WriteString(fmt.Sprintf("_Revision:_ %s\n", EscapeMarkdownV2((*page.SHA)[:7])))
 			}
 			if page.HTMLURL != nil && *page.HTMLURL != "" {
-				msg.WriteString(fmt.Sprintf("[View Page](%s)\n", EscapeMarkdownV2(*page.HTMLURL)))
+				msg.WriteString(fmt.Sprintf("[View Page](%s)\n", EscapeMarkdownV2URL(*page.HTMLURL)))
 			}
 
 			msg.WriteString("\n")
@@ -1173,7 +1177,7 @@ func HandleDeployKeyEvent(e *github.DeployKeyEvent) (string, *InlineKeyboardMark
 	if key := e.GetKey(); key != nil {
 		msg += fmt.Sprintf("*Title:* %s\n", EscapeMarkdownV2(key.GetTitle()))
 		if url := key.GetURL(); url != "" {
-			msg += fmt.Sprintf("[View Key](%s)\n", EscapeMarkdownV2(url))
+			msg += fmt.Sprintf("[View Key](%s)\n", EscapeMarkdownV2URL(url))
 		}
 	}
 
@@ -1194,11 +1198,11 @@ func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) (string, *InlineKeyboardMa
 	suite := e.GetCheckSuite()
 	var msg strings.Builder
 
-	action := html.EscapeString(strings.Title(e.GetAction()))
+	action := strings.Title(e.GetAction())
 	msg.WriteString(fmt.Sprintf("✅ *Check Suite: %s*\n\n", EscapeMarkdownV2(action)))
 
 	if suite != nil {
-		status := html.EscapeString(suite.GetStatus())
+		status := suite.GetStatus()
 		msg.WriteString(fmt.Sprintf("• *Status:* %s\n", EscapeMarkdownV2(status)))
 
 		if conclusion := suite.GetConclusion(); conclusion != "" {
@@ -1209,7 +1213,7 @@ func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) (string, *InlineKeyboardMa
 	msg.WriteString(fmt.Sprintf("\n*Repository:* %s\n", FormatRepo(e.GetRepo().GetFullName())))
 
 	if sender := e.GetSender(); sender != nil {
-		username := html.EscapeString(sender.GetLogin())
+		username := sender.GetLogin()
 		msg.WriteString(fmt.Sprintf("*Triggered by:* @%s", EscapeMarkdownV2(username)))
 	}
 
@@ -1224,12 +1228,12 @@ func HandleCheckRunEvent(e *github.CheckRunEvent) (string, *InlineKeyboardMarkup
 	check := e.GetCheckRun()
 	var msg strings.Builder
 
-	action := html.EscapeString(strings.Title(e.GetAction()))
+	action := strings.Title(e.GetAction())
 	msg.WriteString(fmt.Sprintf("⚙️ *Check Run: %s*\n\n", EscapeMarkdownV2(action)))
 
 	if check != nil {
-		name := html.EscapeString(check.GetName())
-		status := html.EscapeString(check.GetStatus())
+		name := check.GetName()
+		status := check.GetStatus()
 		msg.WriteString(fmt.Sprintf("• *Name:* %s\n", EscapeMarkdownV2(name)))
 		msg.WriteString(fmt.Sprintf("• *Status:* %s\n", EscapeMarkdownV2(status)))
 
@@ -1249,7 +1253,7 @@ func HandleCheckRunEvent(e *github.CheckRunEvent) (string, *InlineKeyboardMarkup
 	msg.WriteString(fmt.Sprintf("\n*Repository:* %s\n", FormatRepo(e.GetRepo().GetFullName())))
 
 	if sender := e.GetSender(); sender != nil {
-		username := html.EscapeString(sender.GetLogin())
+		username := sender.GetLogin()
 		msg.WriteString(fmt.Sprintf("*Triggered by:* @%s", EscapeMarkdownV2(username)))
 	}
 
@@ -1294,7 +1298,7 @@ func HandleSecurityAdvisoryEvent(e *github.SecurityAdvisoryEvent) (string, *Inli
 			msg += fmt.Sprintf("*CVE:* %s\n", EscapeMarkdownV2(cve))
 		}
 		if url := adv.GetURL(); url != "" {
-			msg += fmt.Sprintf("[View Advisory](%s)\n", EscapeMarkdownV2(url))
+			msg += fmt.Sprintf("[View Advisory](%s)\n", EscapeMarkdownV2URL(url))
 		}
 		if author := adv.GetAuthor(); author != nil {
 			msg += fmt.Sprintf("*Reported by:* %s\n", FormatUser(author.GetLogin()))

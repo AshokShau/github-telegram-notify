@@ -102,8 +102,6 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		message, markup = utils.HandlePageBuildEvent(e)
 	case *github.DeployKeyEvent:
 		message, markup = utils.HandleDeployKeyEvent(e)
-	case *github.StarredRepository:
-		message, markup = utils.HandleStarredEvent(e)
 	case *github.CreateEvent:
 		message, markup = utils.HandleCreateEvent(e)
 	case *github.DeleteEvent:
