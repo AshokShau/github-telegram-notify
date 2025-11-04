@@ -125,8 +125,15 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 	repoURL := event.Repo.GetHTMLURL()
 	branch := strings.TrimPrefix(event.GetRef(), "refs/heads/")
 	compareURL := event.GetCompare()
-	commitCount := len(event.Commits)
+	
+	var commits []*github.HeadCommit
+	if len(event.Commits) > 0 {
+		commits = event.Commits
+	} else if event.HeadCommit != nil {
+		commits = []*github.HeadCommit{event.HeadCommit}
+	}
 
+	commitCount := len(commits)
 	if commitCount == 0 {
 		return "", nil
 	}
@@ -148,18 +155,24 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 		msg += "⚠️ _Force pushed_\n"
 	}
 
-	for _, commit := range event.Commits {
+	for _, commit := range commits {
 		shortSHA := commit.GetID()
 		if len(shortSHA) > 7 {
 			shortSHA = shortSHA[:7]
 		}
 		commitURL := fmt.Sprintf("%s/commit/%s", repoURL, commit.GetID())
+		var authorStr string
+		if login := commit.Author.GetLogin(); login != "" {
+			authorStr = FormatUser(login)
+		} else {
+			authorStr = EscapeMarkdownV2(commit.Author.GetName())
+		}
 		msg += fmt.Sprintf(
 			"\\- [`%s`](%s): %s by %s\n",
 			EscapeMarkdownV2(shortSHA),
 			EscapeMarkdownV2URL(commitURL),
 			FormatTextWithMarkdown(commit.GetMessage()),
-			EscapeMarkdownV2(commit.Author.GetName()),
+			authorStr,
 		)
 	}
 
