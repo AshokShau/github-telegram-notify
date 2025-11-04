@@ -34,99 +34,102 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Prioritize critical or frequent event types
 	var message string
+	var markup *utils.InlineKeyboardMarkup
 	switch e := event.(type) {
 	case *github.PushEvent:
-		message = utils.HandlePushEvent(e)
+		message, markup = utils.HandlePushEvent(e)
 	case *github.PullRequestEvent:
-		message = utils.HandlePullRequestEvent(e)
+		message, markup = utils.HandlePullRequestEvent(e)
 	case *github.IssuesEvent:
-		message = utils.HandleIssuesEvent(e)
+		message, markup = utils.HandleIssuesEvent(e)
 	case *github.PingEvent:
-		message = utils.HandlePingEvent(e)
+		message, markup = utils.HandlePingEvent(e)
 
 	// Handle review-related events
 	case *github.PullRequestReviewEvent:
-		message = utils.HandlePullRequestReviewEvent(e)
+		message, markup = utils.HandlePullRequestReviewEvent(e)
 	case *github.PullRequestReviewCommentEvent:
-		message = utils.HandlePullRequestReviewCommentEvent(e)
+		message, markup = utils.HandlePullRequestReviewCommentEvent(e)
 
 	// Handle repository and organization events
 	case *github.RepositoryEvent:
-		message = utils.HandleRepositoryEvent(e)
+		message, markup = utils.HandleRepositoryEvent(e)
 	case *github.RepositoryDispatchEvent:
-		message = utils.HandleRepositoryDispatchEvent(e)
+		message, markup = utils.HandleRepositoryDispatchEvent(e)
 	case *github.OrganizationEvent:
-		message = utils.HandleOrganizationEvent(e)
+		message, markup = utils.HandleOrganizationEvent(e)
 	case *github.OrgBlockEvent:
-		message = utils.HandleOrgBlockEvent(e)
+		message, markup = utils.HandleOrgBlockEvent(e)
 
 	// Handle CI/CD and deployment-related events
 	case *github.CheckRunEvent:
-		message = utils.HandleCheckRunEvent(e)
+		message, markup = utils.HandleCheckRunEvent(e)
 	case *github.CheckSuiteEvent:
-		message = utils.HandleCheckSuiteEvent(e)
+		message, markup = utils.HandleCheckSuiteEvent(e)
 	case *github.WorkflowRunEvent:
-		message = utils.HandleWorkflowRunEvent(e)
+		message, markup = utils.HandleWorkflowRunEvent(e)
 	case *github.WorkflowJobEvent:
-		message = utils.HandleWorkflowJobEvent(e)
+		message, markup = utils.HandleWorkflowJobEvent(e)
 	case *github.DeploymentEvent:
-		message = utils.HandleDeploymentEvent(e)
+		message, markup = utils.HandleDeploymentEvent(e)
 	case *github.DeploymentStatusEvent:
-		message = utils.HandleDeploymentStatusEvent(e)
+		message, markup = utils.HandleDeploymentStatusEvent(e)
 
 	// Handle advisory and security-related events
 	case *github.SecurityAdvisoryEvent:
-		message = utils.HandleSecurityAdvisoryEvent(e)
+		message, markup = utils.HandleSecurityAdvisoryEvent(e)
 	case *github.MembershipEvent:
-		message = utils.HandleMembershipEvent(e)
+		message, markup = utils.HandleMembershipEvent(e)
 	case *github.MilestoneEvent:
-		message = utils.HandleMilestoneEvent(e)
+		message, markup = utils.HandleMilestoneEvent(e)
 
 	// Handle less frequent or low-priority events
 	case *github.CommitCommentEvent:
-		message = utils.HandleCommitCommentEvent(e)
+		message, markup = utils.HandleCommitCommentEvent(e)
 	case *github.ForkEvent:
-		message = utils.HandleForkEvent(e)
+		message, markup = utils.HandleForkEvent(e)
 	case *github.ReleaseEvent:
-		message = utils.HandleReleaseEvent(e)
+		message, markup = utils.HandleReleaseEvent(e)
 	case *github.StarEvent:
-		message = utils.HandleStarEvent(e)
+		message, markup = utils.HandleStarEvent(e)
 	case *github.WatchEvent:
-		message = utils.HandleWatchEvent(e)
+		message, markup = utils.HandleWatchEvent(e)
 	case *github.LabelEvent:
-		message = utils.HandleLabelEvent(e)
+		message, markup = utils.HandleLabelEvent(e)
 	case *github.MarketplacePurchaseEvent:
-		message = utils.HandleMarketplacePurchaseEvent(e)
+		message, markup = utils.HandleMarketplacePurchaseEvent(e)
 	case *github.PageBuildEvent:
-		message = utils.HandlePageBuildEvent(e)
+		message, markup = utils.HandlePageBuildEvent(e)
 	case *github.DeployKeyEvent:
-		message = utils.HandleDeployKeyEvent(e)
+		message, markup = utils.HandleDeployKeyEvent(e)
 	case *github.StarredRepository:
-		message = utils.HandleStarredEvent(e)
+		message, markup = utils.HandleStarredEvent(e)
 	case *github.CreateEvent:
-		message = utils.HandleCreateEvent(e)
+		message, markup = utils.HandleCreateEvent(e)
 	case *github.DeleteEvent:
-		message = utils.HandleDeleteEvent(e)
+		message, markup = utils.HandleDeleteEvent(e)
 	case *github.IssueCommentEvent:
-		message = utils.HandleIssueCommentEvent(e)
+		message, markup = utils.HandleIssueCommentEvent(e)
 	case *github.MemberEvent:
-		message = utils.HandleMemberEvent(e)
+		message, markup = utils.HandleMemberEvent(e)
 	case *github.PublicEvent:
-		message = utils.HandlePublicEvent(e)
+		message, markup = utils.HandlePublicEvent(e)
 	case *github.StatusEvent:
-		message = utils.HandleStatusEvent(e)
+		message, markup = utils.HandleStatusEvent(e)
 	case *github.WorkflowDispatchEvent:
-		message = utils.HandleWorkflowDispatchEvent(e)
+		message, markup = utils.HandleWorkflowDispatchEvent(e)
 	case *github.TeamAddEvent:
-		message = utils.HandleTeamAddEvent(e)
+		message, markup = utils.HandleTeamAddEvent(e)
 	case *github.TeamEvent:
-		message = utils.HandleTeamEvent(e)
+		message, markup = utils.HandleTeamEvent(e)
 	case *github.PackageEvent:
-		message = utils.HandlePackageEvent(e)
+		message, markup = utils.HandlePackageEvent(e)
 	case *github.GollumEvent:
-		message = utils.HandleGollumEvent(e)
+		message, markup = utils.HandleGollumEvent(e)
 	case *github.MetaEvent:
-		message = utils.HandleMetaEvent(e)
+		message, markup = utils.HandleMetaEvent(e)
+	case *github.InstallationEvent:
+		message, markup = utils.HandleInstallationEvent(e)
 	// Catch-all fallback for unhandled events
 	default:
 		log.Printf("Unhandled event type: %s\n", github.WebHookType(r))
@@ -145,7 +148,7 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = utils.SendToTelegram(chatID, message)
+	err = utils.SendToTelegram(chatID, message, markup)
 	if err != nil {
 		http.Error(w, strings.ReplaceAll(err.Error(), config.BotToken, "$Bot"), http.StatusInternalServerError)
 		return

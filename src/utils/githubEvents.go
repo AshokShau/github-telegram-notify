@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v77/github"
 )
 
-func HandleIssuesEvent(event *github.IssuesEvent) string {
+func HandleIssuesEvent(event *github.IssuesEvent) (string, *InlineKeyboardMarkup) {
 	repo := event.GetRepo().GetFullName()
 	action := event.GetAction()
 	sender := event.GetSender().GetLogin()
@@ -19,52 +19,49 @@ func HandleIssuesEvent(event *github.IssuesEvent) string {
 
 	// Base message template
 	msg := fmt.Sprintf(
-		"<b>📌 %s issue</b>\n"+
-			"<b>Repo:</b> <a href='%s'>%s</a>\n"+
-			"<b>By:</b> %s\n",
-		strings.Title(action),
-		url, repo,
-		sender,
+		"*📌 %s issue*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(strings.Title(action)),
+		FormatRepo(repo),
+		FormatUser(sender),
 	)
 
 	// Add action-specific details
 	switch action {
 	case "opened", "edited":
-		msg += fmt.Sprintf("<b>Title:</b> %s\n", title)
+		msg += fmt.Sprintf("*Title:* %s\n", EscapeMarkdownV2(title))
 		if body := issue.GetBody(); body != "" {
-			msg += fmt.Sprintf("<b>Description:</b>\n%s\n", body)
+			msg += fmt.Sprintf("*Description:*\n%s\n", EscapeMarkdownV2(body))
 		}
 	case "closed":
 		if closer := issue.GetClosedBy(); closer != nil {
-			msg += fmt.Sprintf("<b>Closed by:</b> %s\n", closer.GetLogin())
+			msg += fmt.Sprintf("*Closed by:* %s\n", EscapeMarkdownV2(closer.GetLogin()))
 		}
 	case "reopened":
-		msg += "<i>Issue reopened</i>\n"
+		msg += "_Issue reopened_\n"
 	case "assigned":
 		var assignees []string
 		for _, a := range issue.Assignees {
-			assignees = append(assignees, a.GetLogin())
+			assignees = append(assignees, EscapeMarkdownV2(a.GetLogin()))
 		}
-		msg += fmt.Sprintf("<b>Assigned to:</b> %s\n", strings.Join(assignees, ", "))
+		msg += fmt.Sprintf("*Assigned to:* %s\n", strings.Join(assignees, ", "))
 	case "labeled":
 		var labels []string
 		for _, l := range issue.Labels {
-			labels = append(labels, l.GetName())
+			labels = append(labels, EscapeMarkdownV2(l.GetName()))
 		}
-		msg += fmt.Sprintf("<b>Labels:</b> %s\n", strings.Join(labels, ", "))
+		msg += fmt.Sprintf("*Labels:* %s\n", strings.Join(labels, ", "))
 	case "milestoned":
 		if m := issue.GetMilestone(); m != nil {
-			msg += fmt.Sprintf("<b>Milestone:</b> %s\n", m.GetTitle())
+			msg += fmt.Sprintf("*Milestone:* %s\n", EscapeMarkdownV2(m.GetTitle()))
 		}
 	}
 
-	// Add URL at the end
-	msg += fmt.Sprintf("<a href='%s'>View Issue</a>", url)
-
-	return msg
+	return FormatMessageWithButton(msg, "View Issue", url)
 }
 
-func HandlePullRequestEvent(event *github.PullRequestEvent) string {
+func HandlePullRequestEvent(event *github.PullRequestEvent) (string, *InlineKeyboardMarkup) {
 	repo := event.GetRepo().GetFullName()
 	action := event.GetAction()
 	sender := event.GetSender().GetLogin()
@@ -75,19 +72,20 @@ func HandlePullRequestEvent(event *github.PullRequestEvent) string {
 
 	// Base message template
 	msg := fmt.Sprintf(
-		"<b>🚀 PR %s</b>: <a href='%s'>%s</a>\n"+
-			"<b>Repo:</b> <a href='https://github.com/%s'>%s</a>\n"+
-			"<b>By:</b> %s | <b>State:</b> %s\n",
-		strings.Title(action),
-		url, title,
-		repo, repo,
-		sender, state,
+		"*🚀 PR %s: %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s | *State:* %s\n",
+		EscapeMarkdownV2(strings.Title(action)),
+		EscapeMarkdownV2(title),
+		FormatRepo(repo),
+		FormatUser(sender),
+		EscapeMarkdownV2(state),
 	)
 
 	// Add action-specific details
 	switch action {
 	case "opened":
-		msg += fmt.Sprintf("<b>Description:</b>\n%s\n", pr.GetBody())
+		msg += fmt.Sprintf("*Description:*\n%s\n", EscapeMarkdownV2(pr.GetBody()))
 	case "closed":
 		if pr.GetMerged() {
 			msg += "✅ Merged\n"
@@ -97,74 +95,53 @@ func HandlePullRequestEvent(event *github.PullRequestEvent) string {
 	case "reopened":
 		msg += "🔄 Reopened\n"
 	case "edited":
-		msg += fmt.Sprintf("✏️ Edited\n<b>Description:</b>\n%s\n", pr.GetBody())
+		msg += fmt.Sprintf("✏️ Edited\n*Description:*\n%s\n", EscapeMarkdownV2(pr.GetBody()))
 	case "assigned":
 		var assignees []string
 		for _, a := range pr.Assignees {
-			assignees = append(assignees, a.GetLogin())
+			assignees = append(assignees, EscapeMarkdownV2(a.GetLogin()))
 		}
-		msg += fmt.Sprintf("<b>Assigned:</b> %s\n", strings.Join(assignees, ", "))
+		msg += fmt.Sprintf("*Assigned:* %s\n", strings.Join(assignees, ", "))
 	case "review_requested":
 		var reviewers []string
 		for _, r := range pr.RequestedReviewers {
-			reviewers = append(reviewers, r.GetLogin())
+			reviewers = append(reviewers, EscapeMarkdownV2(r.GetLogin()))
 		}
-		msg += fmt.Sprintf("<b>Reviewers:</b> %s\n", strings.Join(reviewers, ", "))
+		msg += fmt.Sprintf("*Reviewers:* %s\n", strings.Join(reviewers, ", "))
 	case "labeled":
 		var labels []string
 		for _, l := range pr.Labels {
-			labels = append(labels, l.GetName())
+			labels = append(labels, EscapeMarkdownV2(l.GetName()))
 		}
-		msg += fmt.Sprintf("<b>Labels:</b> %s\n", strings.Join(labels, ", "))
+		msg += fmt.Sprintf("*Labels:* %s\n", strings.Join(labels, ", "))
 	case "synchronize":
 		msg += "🔄 New commits pushed\n"
 	}
 
-	// Add URL at the end
-	msg += fmt.Sprintf("<a href='%s'>View PR</a>", url)
-
-	return msg
+	return FormatMessageWithButton(msg, "View PR", url)
 }
 
-func HandleStarredEvent(event *github.StarredRepository) string {
-	repo := event.Repository.GetFullName()
-	repoURL := event.Repository.GetHTMLURL()
-	sender := event.Repository.Owner.GetLogin()
-	stars := event.Repository.GetStargazersCount()
-
-	return fmt.Sprintf(
-		"🌟 <b>New star on</b> <a href='%s'>%s</a>\n"+
-			"👤 Starred by: %s\n"+
-			"✨ Total stars: %d",
-		repoURL,
-		repo,
-		sender,
-		stars,
-	)
-}
-
-func HandlePushEvent(event *github.PushEvent) string {
+func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 	repo := event.Repo.GetName()
-	repoURL := event.Repo.GetHTMLURL()
 	branch := strings.TrimPrefix(event.GetRef(), "refs/heads/")
 	compareURL := event.GetCompare()
 	commitCount := len(event.Commits)
 
 	if commitCount == 0 {
-		return ""
+		return "", nil
 	}
 
 	msg := fmt.Sprintf(
-		"🔨 <b>%d</b> <a href='%s'>new commit(s)</a> to <code>%s:%s</code>:\n\n",
-		commitCount, compareURL, repo, branch,
+		"🔨 *%d new commit(s) to* `%s:%s`\n\n",
+		commitCount, EscapeMarkdownV2(repo), EscapeMarkdownV2(branch),
 	)
 
 	if event.GetCreated() {
-		msg += "🌱 <i>New branch created</i>\n"
+		msg += "🌱 _New branch created_\n"
 	} else if event.GetDeleted() {
-		msg += "🗑️ <i>Branch deleted</i>\n"
+		msg += "🗑️ _Branch deleted_\n"
 	} else if event.GetForced() {
-		msg += "⚠️ <i>Force pushed</i>\n"
+		msg += "⚠️ _Force pushed_\n"
 	}
 
 	for _, commit := range event.Commits {
@@ -173,34 +150,27 @@ func HandlePushEvent(event *github.PushEvent) string {
 			shortSHA = shortSHA[:7]
 		}
 		msg += fmt.Sprintf(
-			"• <a href='%s/commit/%s'>%s</a>: %s by @%s\n",
-			repoURL,
+			"\\- [`%s`](%s/commit/%s): %s by @%s\n",
+			EscapeMarkdownV2(shortSHA),
+			event.Repo.GetHTMLURL(),
 			commit.GetID(),
-			shortSHA,
-			htmlEscape(commit.GetMessage()),
-			htmlEscape(commit.Author.GetName()),
+			EscapeMarkdownV2(commit.GetMessage()),
+			EscapeMarkdownV2(commit.Author.GetName()),
 		)
 	}
 
 	if len(msg) > 4000 {
-		return fmt.Sprintf(
-			"🔨 <b>%d</b> <a href='%s'>new commit(s)</a> to <code>%s:%s</code>:\n\n"+
-				"⚠️ <i>Too many commits to display, check the repository for details.</i>\n",
-			commitCount, compareURL, repo, branch,
+		msg = fmt.Sprintf(
+			"🔨 *%d new commit(s) to* `%s:%s`\n\n"+
+				"⚠️ _Too many commits to display, check the repository for details\\._\n",
+			commitCount, EscapeMarkdownV2(repo), EscapeMarkdownV2(branch),
 		)
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Commits", compareURL)
 }
 
-func htmlEscape(input string) string {
-	input = strings.ReplaceAll(input, "&", "&amp;")
-	input = strings.ReplaceAll(input, "<", "&lt;")
-	input = strings.ReplaceAll(input, ">", "&gt;")
-	return input
-}
-
-func HandleCreateEvent(event *github.CreateEvent) string {
+func HandleCreateEvent(event *github.CreateEvent) (string, *InlineKeyboardMarkup) {
 	repo := event.Repo.GetFullName()
 	repoURL := event.Repo.GetHTMLURL()
 	sender := event.Sender.GetLogin()
@@ -209,30 +179,29 @@ func HandleCreateEvent(event *github.CreateEvent) string {
 
 	// Base message
 	msg := fmt.Sprintf(
-		"✨ <b>New %s created</b>\n"+
-			"<b>Name:</b> <code>%s</code>\n"+
-			"<b>Repo:</b> <a href='%s'>%s</a>\n"+
-			"<b>By:</b> %s\n",
-		refType,
-		ref,
-		repoURL,
-		repo,
-		sender,
+		"✨ *New %s created*\n\n"+
+			"*Name:* `%s`\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(refType),
+		EscapeMarkdownV2(ref),
+		FormatRepo(repo),
+		FormatUser(sender),
 	)
 
 	// Add description if available
 	if desc := event.GetDescription(); desc != "" {
-		msg += fmt.Sprintf("<b>Description:</b> %s\n", desc)
+		msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
 	}
 
 	// Add default branch for repository creation events
 	if refType == "repository" && event.GetMasterBranch() != "" {
-		msg += fmt.Sprintf("<b>Default branch:</b> %s\n", event.GetMasterBranch())
+		msg += fmt.Sprintf("*Default branch:* %s\n", EscapeMarkdownV2(event.GetMasterBranch()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Repository", repoURL)
 }
-func HandleDeleteEvent(event *github.DeleteEvent) string {
+func HandleDeleteEvent(event *github.DeleteEvent) (string, *InlineKeyboardMarkup) {
 	repo := event.Repo.GetFullName()
 	repoURL := event.Repo.GetHTMLURL()
 	sender := event.Sender.GetLogin()
@@ -247,33 +216,35 @@ func HandleDeleteEvent(event *github.DeleteEvent) string {
 		emoji = "🏷️"
 	}
 
-	return fmt.Sprintf(
-		"%s <b>Deleted %s:</b> <code>%s</code>\n"+
-			"<b>Repo:</b> <a href='%s'>%s</a>\n"+
-			"<b>By:</b> %s",
+	msg := fmt.Sprintf(
+		"%s *Deleted %s:* `%s`\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s",
 		emoji,
-		refType,
-		ref,
-		repoURL,
-		repo,
-		sender,
+		EscapeMarkdownV2(refType),
+		EscapeMarkdownV2(ref),
+		FormatRepo(repo),
+		FormatUser(sender),
 	)
+
+	return FormatMessageWithButton(msg, "View Repository", repoURL)
 }
-func HandleForkEvent(event *github.ForkEvent) string {
+func HandleForkEvent(event *github.ForkEvent) (string, *InlineKeyboardMarkup) {
 	originalRepo := event.Repo.GetFullName()
 	forkedRepo := event.Forkee.GetFullName()
 	sender := event.Sender.GetLogin()
-	return fmt.Sprintf(
-		"🍴 <a href='https://github.com/%s'>%s</a> forked by %s\n"+
-			"✨ %d stars | 🍴 %d forks",
-		forkedRepo,
-		originalRepo,
-		sender,
+	msg := fmt.Sprintf(
+		"🍴 %s forked by %s\n\n"+
+			"✨ *Stars:* %d | 🍴 *Forks:* %d",
+		FormatRepo(originalRepo),
+		FormatUser(sender),
 		event.Repo.GetStargazersCount(),
 		event.Repo.GetForksCount(),
 	)
+
+	return FormatMessageWithButton(msg, "View Fork", fmt.Sprintf("https://github.com/%s", forkedRepo))
 }
-func HandleCommitCommentEvent(event *github.CommitCommentEvent) string {
+func HandleCommitCommentEvent(event *github.CommitCommentEvent) (string, *InlineKeyboardMarkup) {
 	comment := event.Comment.GetBody()
 	commitSHA := event.Comment.GetCommitID()
 	repo := event.Repo.GetFullName()
@@ -294,37 +265,36 @@ func HandleCommitCommentEvent(event *github.CommitCommentEvent) string {
 
 	// Base message
 	msg := fmt.Sprintf(
-		"%s <b>%s</b> %s comment on commit\n"+
-			"<b>Repo:</b> <a href='https://github.com/%s'>%s</a>\n"+
-			"<b>Commit:</b> <a href='%s'>%s</a>\n",
+		"%s *%s %s comment on commit*\n\n"+
+			"*Repository:* %s\n"+
+			"*Commit:* [`%s`](%s)\n",
 		actionEmoji,
-		sender,
-		action,
-		repo,
-		repo,
+		FormatUser(sender),
+		EscapeMarkdownV2(action),
+		FormatRepo(repo),
+		EscapeMarkdownV2(commitSHA[:7]),
 		commitURL,
-		commitSHA[:7],
 	)
 
 	// Add comment for created/edited actions
 	if action == "created" || action == "edited" {
-		msg += fmt.Sprintf("<b>Comment:</b> %s", comment)
+		msg += fmt.Sprintf("*Comment:* %s", EscapeMarkdownV2(comment))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Comment", event.Comment.GetHTMLURL())
 }
-func HandlePublicEvent(event *github.PublicEvent) string {
-	return fmt.Sprintf(
-		"🔓 <b>Repository made public</b>\n"+
-			"<b>Name:</b> <a href='%s'>%s</a>\n"+
-			"<b>By:</b> %s",
-		event.Repo.GetHTMLURL(),
-		event.Repo.GetFullName(),
-		event.Sender.GetLogin(),
+func HandlePublicEvent(event *github.PublicEvent) (string, *InlineKeyboardMarkup) {
+	msg := fmt.Sprintf(
+		"🔓 *Repository made public*\n\n"+
+			"*Name:* %s\n"+
+			"*By:* %s",
+		FormatRepo(event.Repo.GetFullName()),
+		FormatUser(event.Sender.GetLogin()),
 	)
+	return FormatMessageWithButton(msg, "View Repository", event.Repo.GetHTMLURL())
 }
 
-func HandleIssueCommentEvent(event *github.IssueCommentEvent) string {
+func HandleIssueCommentEvent(event *github.IssueCommentEvent) (string, *InlineKeyboardMarkup) {
 	action := event.GetAction()
 	issue := event.Issue
 	comment := event.Comment
@@ -343,29 +313,28 @@ func HandleIssueCommentEvent(event *github.IssueCommentEvent) string {
 
 	// Base message
 	msg := fmt.Sprintf(
-		"%s <b>%s</b> %s comment on <a href='%s'>%s#%d</a>\n"+
-			"<b>Title:</b> %s\n",
+		"%s *%s %s comment on* [%s#%d](%s)\n\n"+
+			"*Title:* %s\n",
 		actionEmoji,
-		sender,
-		action,
-		issue.GetHTMLURL(),
-		repo,
+		FormatUser(sender),
+		EscapeMarkdownV2(action),
+		EscapeMarkdownV2(repo),
 		issue.GetNumber(),
-		issue.GetTitle(),
+		issue.GetHTMLURL(),
+		EscapeMarkdownV2(issue.GetTitle()),
 	)
 
 	// Add comment for created/edited actions
 	if action == "created" || action == "edited" {
-		msg += fmt.Sprintf("<b>Comment:</b> %s", comment.GetBody())
+		msg += fmt.Sprintf("*Comment:* %s", EscapeMarkdownV2(comment.GetBody()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Comment", comment.GetHTMLURL())
 }
-func HandleMemberEvent(event *github.MemberEvent) string {
+func HandleMemberEvent(event *github.MemberEvent) (string, *InlineKeyboardMarkup) {
 	action := event.GetAction()
 	member := event.Member.GetLogin()
 	repo := event.Repo.GetFullName()
-	org := event.Org.GetLogin()
 	sender := event.Sender.GetLogin()
 
 	// Action emojis and verbs
@@ -387,24 +356,23 @@ func HandleMemberEvent(event *github.MemberEvent) string {
 
 	// Base message
 	msg := fmt.Sprintf(
-		"%s <b>%s</b> %s %s/%s\n"+
-			"<b>By:</b> %s",
+		"%s *%s* %s *%s*\n\n"+
+			"*By:* %s",
 		actionInfo.emoji,
-		member,
-		actionInfo.verb,
-		org,
-		repo,
-		sender,
+		FormatUser(member),
+		EscapeMarkdownV2(actionInfo.verb),
+		FormatRepo(repo),
+		FormatUser(sender),
 	)
 
 	// Add changes for edited action if available
 	if action == "edited" && event.Changes != nil {
-		msg += fmt.Sprintf("\n<b>Changes:</b> %v", event.Changes)
+		msg += fmt.Sprintf("\n*Changes:* %v", event.Changes)
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Repository", event.Repo.GetHTMLURL())
 }
-func HandleRepositoryEvent(event *github.RepositoryEvent) string {
+func HandleRepositoryEvent(event *github.RepositoryEvent) (string, *InlineKeyboardMarkup) {
 	action := event.GetAction()
 	repo := event.Repo.GetFullName()
 	url := event.Repo.GetHTMLURL()
@@ -428,17 +396,17 @@ func HandleRepositoryEvent(event *github.RepositoryEvent) string {
 		}{"⚠️", fmt.Sprintf("performed %s action", action)}
 	}
 
-	return fmt.Sprintf(
-		"%s <a href='%s'>%s</a> %s\n"+
-			"👤 By: %s",
+	msg := fmt.Sprintf(
+		"%s %s %s\n\n"+
+			"👤 *By:* %s",
 		actionDetails.emoji,
-		url,
-		repo,
-		actionDetails.desc,
-		sender,
+		FormatRepo(repo),
+		EscapeMarkdownV2(actionDetails.desc),
+		FormatUser(sender),
 	)
+	return FormatMessageWithButton(msg, "View Repository", url)
 }
-func HandleReleaseEvent(event *github.ReleaseEvent) string {
+func HandleReleaseEvent(event *github.ReleaseEvent) (string, *InlineKeyboardMarkup) {
 	action := event.GetAction()
 	release := event.GetRelease()
 	repo := event.GetRepo().GetFullName()
@@ -464,43 +432,44 @@ func HandleReleaseEvent(event *github.ReleaseEvent) string {
 
 	// Base message
 	msg := fmt.Sprintf(
-		"%s <b>%s</b> in <a href='%s'>%s</a>\n"+
-			"<b>Tag:</b> %s\n"+
-			"<b>By:</b> %s",
+		"%s *%s in* %s\n\n"+
+			"*Tag:* %s\n"+
+			"*By:* %s",
 		actionDetails.emoji,
-		actionDetails.verb,
-		release.GetHTMLURL(),
-		repo,
-		release.GetTagName(),
-		sender,
+		EscapeMarkdownV2(actionDetails.verb),
+		FormatRepo(repo),
+		EscapeMarkdownV2(release.GetTagName()),
+		FormatUser(sender),
 	)
 
 	// Add description for created/edited actions
 	if (action == "created" || action == "edited") && release.GetBody() != "" {
-		msg += fmt.Sprintf("\n<b>Notes:</b> %s", release.GetBody())
+		msg += fmt.Sprintf("\n*Notes:*\n%s", EscapeMarkdownV2(release.GetBody()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Release", release.GetHTMLURL())
 }
 
-func HandleWatchEvent(event *github.WatchEvent) string {
+func HandleWatchEvent(event *github.WatchEvent) (string, *InlineKeyboardMarkup) {
 	action := event.GetAction()
 	if action != "started" {
-		return fmt.Sprintf(
-			"⚠️ Unexpected watch action: %s on %s by %s",
-			action,
-			event.GetRepo().GetFullName(),
-			event.GetSender().GetLogin(),
+		msg := fmt.Sprintf(
+			"⚠️ *Unexpected watch action:* %s on %s by %s",
+			EscapeMarkdownV2(action),
+			FormatRepo(event.GetRepo().GetFullName()),
+			FormatUser(event.GetSender().GetLogin()),
 		)
+		return msg, nil
 	}
-	return fmt.Sprintf(
+	msg := fmt.Sprintf(
 		"⭐ %s starred %s",
-		event.GetSender().GetLogin(),
-		event.GetRepo().GetFullName(),
+		FormatUser(event.GetSender().GetLogin()),
+		FormatRepo(event.GetRepo().GetFullName()),
 	)
+	return FormatMessageWithButton(msg, "View Repository", event.GetRepo().GetHTMLURL())
 }
 
-func HandleStatusEvent(event *github.StatusEvent) string {
+func HandleStatusEvent(event *github.StatusEvent) (string, *InlineKeyboardMarkup) {
 	state := event.GetState()
 	stateEmoji := map[string]string{
 		"success": "✅",
@@ -511,72 +480,86 @@ func HandleStatusEvent(event *github.StatusEvent) string {
 		stateEmoji = "⚠️"
 	}
 
-	return fmt.Sprintf(
-		"%s <b>%s</b> for commit <a href='%s'>%s</a>\n"+
-			"<b>Repo:</b> <a href='%s'>%s</a>\n"+
-			"<b>Status:</b> %s\n"+
-			"<b>By:</b> %s",
+	msg := fmt.Sprintf(
+		"%s *%s for commit* [`%s`](%s)\n\n"+
+			"*Repository:* %s\n"+
+			"*Status:* %s\n"+
+			"*By:* %s",
 		stateEmoji,
-		strings.Title(state),
+		EscapeMarkdownV2(strings.Title(state)),
+		EscapeMarkdownV2(event.GetCommit().GetSHA()[:7]),
 		event.GetCommit().GetHTMLURL(),
-		event.GetCommit().GetSHA()[:7],
-		event.GetRepo().GetHTMLURL(),
-		event.GetRepo().GetFullName(),
-		event.GetDescription(),
-		event.GetSender().GetLogin(),
+		FormatRepo(event.GetRepo().GetFullName()),
+		EscapeMarkdownV2(event.GetDescription()),
+		FormatUser(event.GetSender().GetLogin()),
 	)
+	return FormatMessageWithButton(msg, "View Commit", event.GetCommit().GetHTMLURL())
 }
 
-func HandleWorkflowRunEvent(e *github.WorkflowRunEvent) string {
+func HandleWorkflowRunEvent(e *github.WorkflowRunEvent) (string, *InlineKeyboardMarkup) {
 	workflow := e.GetWorkflow().GetName()
 	run := e.GetWorkflowRun()
 	repo := e.GetRepo().GetFullName()
 	sender := e.GetSender().GetLogin()
 
 	// Status emojis and labels
-	statusInfo := map[string]struct {
-		emoji string
-		label string
-	}{
-		"queued":      {"🔄", "Queued"},
-		"in_progress": {"⏳", "Running"},
-		"completed":   {"✅", "Completed"},
-		"success":     {"✅", "Success"},
-		"failure":     {"❌", "Failed"},
-		"neutral":     {"⚖️", "Neutral"},
-		"cancelled":   {"⛔", "Cancelled"},
-	}[run.GetStatus()+"_"+run.GetConclusion()]
+	var statusEmoji string
+	var statusLabel string
+	conclusion := run.GetConclusion()
+	status := run.GetStatus()
 
-	if statusInfo.emoji == "" {
-		statusInfo = struct {
-			emoji string
-			label string
-		}{"⚠️", "Unknown status"}
+	switch status {
+	case "completed":
+		switch conclusion {
+		case "success":
+			statusEmoji = "✅"
+			statusLabel = "Success"
+		case "failure":
+			statusEmoji = "❌"
+			statusLabel = "Failed"
+		case "neutral":
+			statusEmoji = "⚖️"
+			statusLabel = "Neutral"
+		case "cancelled":
+			statusEmoji = "⛔"
+			statusLabel = "Cancelled"
+		default:
+			statusEmoji = "🏁"
+			statusLabel = "Completed"
+		}
+	case "in_progress":
+		statusEmoji = "⏳"
+		statusLabel = "Running"
+	case "queued":
+		statusEmoji = "🔄"
+		statusLabel = "Queued"
+	default:
+		statusEmoji = "⚠️"
+		statusLabel = "Unknown status"
 	}
 
-	return fmt.Sprintf(
-		"%s <b>%s</b> workflow\n"+
-			"<b>Status:</b> %s\n"+
-			"<b>Repo:</b> <a href='%s'>%s</a>\n"+
-			"<b>By:</b> %s | <a href='%s'>View Run</a>",
-		statusInfo.emoji,
-		workflow,
-		statusInfo.label,
-		e.GetRepo().GetHTMLURL(),
-		repo,
-		sender,
-		run.GetHTMLURL(),
+	msg := fmt.Sprintf(
+		"%s *%s workflow*\n\n"+
+			"*Status:* %s\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s",
+		statusEmoji,
+		EscapeMarkdownV2(workflow),
+		EscapeMarkdownV2(statusLabel),
+		FormatRepo(repo),
+		FormatUser(sender),
 	)
+	return FormatMessageWithButton(msg, "View Run", run.GetHTMLURL())
 }
 
-func HandleWorkflowJobEvent(e *github.WorkflowJobEvent) string {
+func HandleWorkflowJobEvent(e *github.WorkflowJobEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "⚙️ <b>No workflow job data</b>"
+		return "⚙️ *No workflow job data*", nil
 	}
 
 	job := e.GetWorkflowJob()
 	if job == nil {
-		return "⚙️ <b>Invalid workflow job</b>"
+		return "⚙️ *Invalid workflow job*", nil
 	}
 
 	status := job.GetStatus()
@@ -600,28 +583,26 @@ func HandleWorkflowJobEvent(e *github.WorkflowJobEvent) string {
 		statusText = "Cancelled"
 	}
 
-	msg := fmt.Sprintf("%s <b>Workflow Job %s</b>\n", statusEmoji, statusText)
-	msg += fmt.Sprintf("<b>Name:</b> %s\n", job.GetName())
-	msg += fmt.Sprintf("<b>Repo:</b> %s\n", e.GetRepo().GetFullName())
+	msg := fmt.Sprintf("%s *Workflow Job %s*\n\n", statusEmoji, EscapeMarkdownV2(statusText))
+	msg += fmt.Sprintf("*Name:* %s\n", EscapeMarkdownV2(job.GetName()))
+	msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(e.GetRepo().GetFullName()))
 
 	if !job.GetStartedAt().IsZero() {
-		msg += fmt.Sprintf("<b>Started:</b> %s\n", job.GetStartedAt().Format("2006-01-02 15:04"))
+		msg += fmt.Sprintf("*Started:* %s\n", EscapeMarkdownV2(job.GetStartedAt().Format("2006-01-02 15:04")))
 	}
 	if !job.GetCompletedAt().IsZero() {
-		msg += fmt.Sprintf("<b>Completed:</b> %s\n", job.GetCompletedAt().Format("2006-01-02 15:04"))
+		msg += fmt.Sprintf("*Completed:* %s\n", EscapeMarkdownV2(job.GetCompletedAt().Format("2006-01-02 15:04")))
 	}
 
 	if runner := job.GetRunnerName(); runner != "" {
-		msg += fmt.Sprintf("<b>Runner:</b> %s\n", runner)
+		msg += fmt.Sprintf("*Runner:* %s\n", EscapeMarkdownV2(runner))
 	}
 
-	msg += fmt.Sprintf("<b>By:</b> %s\n", e.GetSender().GetLogin())
-	msg += fmt.Sprintf("<a href=\"%s\">View Job</a>", job.GetHTMLURL())
-
-	return msg
+	msg += fmt.Sprintf("*By:* %s\n", FormatUser(e.GetSender().GetLogin()))
+	return FormatMessageWithButton(msg, "View Job", job.GetHTMLURL())
 }
 
-func HandleWorkflowDispatchEvent(e *github.WorkflowDispatchEvent) string {
+func HandleWorkflowDispatchEvent(e *github.WorkflowDispatchEvent) (string, *InlineKeyboardMarkup) {
 	// Get basic event info
 	repo := e.GetRepo().GetFullName()
 	workflow := e.GetWorkflow()
@@ -642,33 +623,35 @@ func HandleWorkflowDispatchEvent(e *github.WorkflowDispatchEvent) string {
 		}
 	}
 
-	return fmt.Sprintf(
-		"🚀 <b>%s</b> manually triggered\n"+
-			"<b>Repo:</b> %s\n"+
-			"<b>Branch:</b> %s\n"+
-			"<b>Inputs:</b> %s\n"+
-			"<b>By:</b> %s",
-		workflow,
-		repo,
-		e.GetRef(),
-		inputs,
-		e.GetSender().GetLogin(),
+	msg := fmt.Sprintf(
+		"🚀 *%s manually triggered*\n\n"+
+			"*Repository:* %s\n"+
+			"*Branch:* %s\n"+
+			"*Inputs:* %s\n"+
+			"*By:* %s",
+		EscapeMarkdownV2(workflow),
+		FormatRepo(repo),
+		EscapeMarkdownV2(e.GetRef()),
+		EscapeMarkdownV2(inputs),
+		FormatUser(e.GetSender().GetLogin()),
 	)
+	return FormatMessageWithButton(msg, "View Repository", e.GetRepo().GetHTMLURL())
 }
-func HandleTeamAddEvent(e *github.TeamAddEvent) string {
-	return fmt.Sprintf(
-		"👥 <b>Team added</b>\n"+
-			"<b>Team:</b> %s\n"+
-			"<b>Repo:</b> %s\n"+
-			"<b>Org:</b> %s\n"+
-			"<b>By:</b> %s",
-		html.EscapeString(e.GetTeam().GetName()),
-		html.EscapeString(e.GetRepo().GetFullName()),
-		html.EscapeString(e.GetOrg().GetLogin()),
-		html.EscapeString(e.GetSender().GetLogin()),
+func HandleTeamAddEvent(e *github.TeamAddEvent) (string, *InlineKeyboardMarkup) {
+	msg := fmt.Sprintf(
+		"👥 *Team added*\n\n"+
+			"*Team:* %s\n"+
+			"*Repository:* %s\n"+
+			"*Org:* %s\n"+
+			"*By:* %s",
+		EscapeMarkdownV2(e.GetTeam().GetName()),
+		FormatRepo(e.GetRepo().GetFullName()),
+		EscapeMarkdownV2(e.GetOrg().GetLogin()),
+		FormatUser(e.GetSender().GetLogin()),
 	)
+	return FormatMessageWithButton(msg, "View Team", e.GetTeam().GetHTMLURL())
 }
-func HandleTeamEvent(e *github.TeamEvent) string {
+func HandleTeamEvent(e *github.TeamEvent) (string, *InlineKeyboardMarkup) {
 	action := e.GetAction()
 	team := e.GetTeam().GetName()
 	org := e.GetOrg().GetLogin()
@@ -691,19 +674,20 @@ func HandleTeamEvent(e *github.TeamEvent) string {
 		}{"⚙️", action}
 	}
 
-	return fmt.Sprintf(
-		"%s <b>Team %s</b>\n"+
-			"<b>Name:</b> %s\n"+
-			"<b>Org:</b> %s\n"+
-			"<b>By:</b> %s",
+	msg := fmt.Sprintf(
+		"%s *Team %s*\n\n"+
+			"*Name:* %s\n"+
+			"*Org:* %s\n"+
+			"*By:* %s",
 		actionInfo.emoji,
-		actionInfo.verb,
-		html.EscapeString(team),
-		html.EscapeString(org),
-		html.EscapeString(sender),
+		EscapeMarkdownV2(actionInfo.verb),
+		EscapeMarkdownV2(team),
+		EscapeMarkdownV2(org),
+		FormatUser(sender),
 	)
+	return FormatMessageWithButton(msg, "View Team", e.GetTeam().GetHTMLURL())
 }
-func HandleStarEvent(e *github.StarEvent) string {
+func HandleStarEvent(e *github.StarEvent) (string, *InlineKeyboardMarkup) {
 	action := e.GetAction() // "created" (starred) or "deleted" (unstarred)
 	user := e.GetSender().GetLogin()
 	repo := e.GetRepo().GetFullName()
@@ -722,18 +706,17 @@ func HandleStarEvent(e *github.StarEvent) string {
 		actionText = "performed unknown action on"
 	}
 
-	return fmt.Sprintf(
-		"%s <a href='https://github.com/%s'>%s</a> %s <a href='%s'>%s</a>",
+	msg := fmt.Sprintf(
+		"%s %s %s %s",
 		emoji,
-		user,
-		user,
-		actionText,
-		repoURL,
-		repo,
+		FormatUser(user),
+		EscapeMarkdownV2(actionText),
+		FormatRepo(repo),
 	)
+	return FormatMessageWithButton(msg, "View Repository", repoURL)
 }
 
-func HandleRepositoryDispatchEvent(e *github.RepositoryDispatchEvent) string {
+func HandleRepositoryDispatchEvent(e *github.RepositoryDispatchEvent) (string, *InlineKeyboardMarkup) {
 	// Extract basic info
 	repo := e.GetRepo().GetFullName()
 	sender := e.GetSender().GetLogin()
@@ -750,23 +733,24 @@ func HandleRepositoryDispatchEvent(e *github.RepositoryDispatchEvent) string {
 		if err := json.Unmarshal(e.ClientPayload, &payload); err == nil {
 			if len(payload) > 0 {
 				payloadBytes, _ := json.Marshal(payload)
-				payloadStr = fmt.Sprintf("\n<b>Payload:</b> <pre>%s</pre>", string(payloadBytes))
+				payloadStr = fmt.Sprintf("\n*Payload:* `%s`", EscapeMarkdownV2(string(payloadBytes)))
 			}
 		}
 	}
 
-	return fmt.Sprintf(
-		"🚀 <b>Repository Dispatch</b>\n"+
-			"<b>Repo:</b> %s\n"+
-			"<b>Action:</b> %s\n"+
-			"<b>Branch:</b> %s\n"+
-			"<b>By:</b> %s%s",
-		repo,
-		action,
-		branchOrDefault(branch),
-		sender,
+	msg := fmt.Sprintf(
+		"🚀 *Repository Dispatch*\n\n"+
+			"*Repository:* %s\n"+
+			"*Action:* %s\n"+
+			"*Branch:* %s\n"+
+			"*By:* %s%s",
+		FormatRepo(repo),
+		EscapeMarkdownV2(action),
+		EscapeMarkdownV2(branchOrDefault(branch)),
+		FormatUser(sender),
 		payloadStr,
 	)
+	return FormatMessageWithButton(msg, "View Repository", e.GetRepo().GetHTMLURL())
 }
 
 // Helper function to handle branch field
@@ -777,7 +761,7 @@ func branchOrDefault(branch *string) string {
 	return "default branch"
 }
 
-func HandlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent) string {
+func HandlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent) (string, *InlineKeyboardMarkup) {
 	action := e.GetAction()
 	repo := e.GetRepo().GetFullName()
 	comment := e.GetComment()
@@ -793,21 +777,20 @@ func HandlePullRequestReviewCommentEvent(e *github.PullRequestReviewCommentEvent
 		actionEmoji = "⚠️"
 	}
 
-	return fmt.Sprintf(
-		"%s <b>PR Review Comment %s</b>\n"+
-			"<b>Repo:</b> %s\n"+
-			"<b>PR:</b> <a href='%s'>#%d %s</a>\n"+
-			"<b>Comment:</b> %s\n"+
-			"<a href='%s'>View Comment</a>",
+	msg := fmt.Sprintf(
+		"%s *PR Review Comment %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*PR:* [%s#%d](%s)\n"+
+			"*Comment:* %s\n",
 		actionEmoji,
-		action,
-		repo,
-		pr.GetHTMLURL(),
+		EscapeMarkdownV2(action),
+		FormatRepo(repo),
+		EscapeMarkdownV2(pr.GetTitle()),
 		pr.GetNumber(),
-		pr.GetTitle(),
-		truncateText(comment.GetBody(), 120),
-		comment.GetHTMLURL(),
+		pr.GetHTMLURL(),
+		EscapeMarkdownV2(truncateText(comment.GetBody(), 120)),
 	)
+	return FormatMessageWithButton(msg, "View Comment", comment.GetHTMLURL())
 }
 
 func truncateText(text string, maxLen int) string {
@@ -816,7 +799,7 @@ func truncateText(text string, maxLen int) string {
 	}
 	return text
 }
-func HandlePullRequestReviewEvent(e *github.PullRequestReviewEvent) string {
+func HandlePullRequestReviewEvent(e *github.PullRequestReviewEvent) (string, *InlineKeyboardMarkup) {
 	action := e.GetAction()
 	review := e.GetReview()
 	pr := e.GetPullRequest()
@@ -833,305 +816,300 @@ func HandlePullRequestReviewEvent(e *github.PullRequestReviewEvent) string {
 		stateEmoji = "🔍"
 	}
 
-	return fmt.Sprintf(
-		"%s <b>PR Review %s</b>\n"+
-			"<b>Repo:</b> %s\n"+
-			"<b>PR:</b> <a href='%s'>#%d %s</a>\n"+
-			"<b>State:</b> %s\n"+
-			"<b>By:</b> %s\n"+
-			"<a href='%s'>View Review</a>",
+	msg := fmt.Sprintf(
+		"%s *PR Review %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*PR:* [%s#%d](%s)\n"+
+			"*State:* %s\n"+
+			"*By:* %s\n",
 		stateEmoji,
-		action,
-		e.GetRepo().GetFullName(),
-		pr.GetHTMLURL(),
+		EscapeMarkdownV2(action),
+		FormatRepo(e.GetRepo().GetFullName()),
+		EscapeMarkdownV2(pr.GetTitle()),
 		pr.GetNumber(),
-		pr.GetTitle(),
-		review.GetState(),
-		e.GetSender().GetLogin(),
-		review.GetHTMLURL(),
+		pr.GetHTMLURL(),
+		EscapeMarkdownV2(review.GetState()),
+		FormatUser(e.GetSender().GetLogin()),
 	)
+	return FormatMessageWithButton(msg, "View Review", review.GetHTMLURL())
 }
-func HandlePingEvent(e *github.PingEvent) string {
-	msg := "🏓 <b>Webhook Ping Received</b>\n"
+func HandlePingEvent(e *github.PingEvent) (string, *InlineKeyboardMarkup) {
+	msg := "🏓 *Webhook Ping Received*\n\n"
 
 	if e.Zen != nil {
-		msg += fmt.Sprintf("🧘 <i>%s</i>\n", *e.Zen)
+		msg += fmt.Sprintf("🧘 _%s_\n", EscapeMarkdownV2(*e.Zen))
 	}
 
 	if e.Repo != nil {
 		msg += fmt.Sprintf(
-			"📦 <a href='https://github.com/%s'>%s</a>\n",
-			*e.Repo.FullName,
-			*e.Repo.Name,
+			"📦 %s\n",
+			FormatRepo(*e.Repo.FullName),
 		)
 	}
 
 	if e.Sender != nil {
-		msg += fmt.Sprintf("👤 By: %s\n", *e.Sender.Login)
+		msg += fmt.Sprintf("👤 *By:* %s\n", FormatUser(*e.Sender.Login))
 	}
 
 	if e.Org != nil {
-		msg += fmt.Sprintf("🏢 Org: %s", *e.Org.Login)
+		msg += fmt.Sprintf("🏢 *Org:* %s", EscapeMarkdownV2(*e.Org.Login))
 	}
 
-	return msg
+	return msg, nil
 }
-func HandlePageBuildEvent(e *github.PageBuildEvent) string {
-	msg := "🏗️ <b>GitHub Pages Build</b>\n"
+func HandlePageBuildEvent(e *github.PageBuildEvent) (string, *InlineKeyboardMarkup) {
+	msg := "🏗️ *GitHub Pages Build*\n\n"
 
 	if e.Build != nil {
 		status := "unknown"
 		if e.Build.Status != nil {
 			status = *e.Build.Status
 		}
-		msg += fmt.Sprintf("<b>Status:</b> %s\n", status)
+		msg += fmt.Sprintf("*Status:* %s\n", EscapeMarkdownV2(status))
 
 		if e.Build.Error != nil {
-			msg += fmt.Sprintf("<b>Error:</b> %v\n", *e.Build.Error)
+			msg += fmt.Sprintf("*Error:* %v\n", EscapeMarkdownV2(fmt.Sprintf("%v", *e.Build.Error)))
 		}
 	}
 
 	if e.Repo != nil {
 		msg += fmt.Sprintf(
-			"📦 <a href='https://github.com/%s'>%s</a>\n",
-			*e.Repo.FullName,
-			*e.Repo.Name,
+			"📦 %s\n",
+			FormatRepo(*e.Repo.FullName),
 		)
 	}
 
 	if e.Sender != nil {
-		msg += fmt.Sprintf("👤 By: %s", *e.Sender.Login)
+		msg += fmt.Sprintf("👤 *By:* %s", FormatUser(*e.Sender.Login))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Repository", e.GetRepo().GetHTMLURL())
 }
 
-func HandlePackageEvent(e *github.PackageEvent) string {
-	msg := "📦 <b>Package Event</b>\n"
+func HandlePackageEvent(e *github.PackageEvent) (string, *InlineKeyboardMarkup) {
+	msg := "📦 *Package Event*\n\n"
 
 	if e.Package != nil && e.Package.Name != nil {
-		msg += fmt.Sprintf("<b>Package:</b> %s\n", *e.Package.Name)
+		msg += fmt.Sprintf("*Package:* %s\n", EscapeMarkdownV2(*e.Package.Name))
 	}
 
 	if e.Repo != nil && e.Repo.Name != nil {
 		msg += fmt.Sprintf(
-			"<b>Repo:</b> <a href='https://github.com/%s'>%s</a>\n",
-			*e.Repo.FullName,
-			*e.Repo.Name,
+			"*Repository:* %s\n",
+			FormatRepo(*e.Repo.FullName),
 		)
 	}
 
 	if e.Sender != nil && e.Sender.Login != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", *e.Sender.Login)
+		msg += fmt.Sprintf("*By:* %s", FormatUser(*e.Sender.Login))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Package", e.GetPackage().GetHTMLURL())
 }
 
-func HandleOrgBlockEvent(e *github.OrgBlockEvent) string {
+func HandleOrgBlockEvent(e *github.OrgBlockEvent) (string, *InlineKeyboardMarkup) {
 	// Build the base message with emoji
-	msg := "🚫 <b>Organization Block</b>\n"
+	msg := "🚫 *Organization Block*\n\n"
 
 	// Add blocked user if available
 	if user := e.GetBlockedUser(); user != nil {
-		msg += fmt.Sprintf("<b>Blocked:</b> %s\n", user.GetLogin())
+		msg += fmt.Sprintf("*Blocked:* %s\n", FormatUser(user.GetLogin()))
 	}
 
 	// Add sender if available
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Organization", e.GetOrganization().GetHTMLURL())
 }
-func HandleOrganizationEvent(e *github.OrganizationEvent) string {
+func HandleOrganizationEvent(e *github.OrganizationEvent) (string, *InlineKeyboardMarkup) {
 	action := e.GetAction()
 	sender := e.GetSender()
 
-	msg := fmt.Sprintf("🏢 <b>Organization Event</b>\n<b>Action:</b> %s", action)
+	msg := fmt.Sprintf("🏢 *Organization Event*\n*Action:* %s", EscapeMarkdownV2(action))
 
 	if sender != nil {
-		msg += fmt.Sprintf("\n<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("\n*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Organization", e.GetOrganization().GetHTMLURL())
 }
-func HandleMilestoneEvent(e *github.MilestoneEvent) string {
+func HandleMilestoneEvent(e *github.MilestoneEvent) (string, *InlineKeyboardMarkup) {
 	milestone := e.GetMilestone()
 	action := e.GetAction()
 
-	msg := fmt.Sprintf("🏁 <b>Milestone %s</b>\n", action)
+	msg := fmt.Sprintf("🏁 *Milestone %s*\n\n", EscapeMarkdownV2(action))
 
 	if milestone != nil {
-		msg += fmt.Sprintf("<b>Title:</b> %s\n", milestone.GetTitle())
+		msg += fmt.Sprintf("*Title:* %s\n", EscapeMarkdownV2(milestone.GetTitle()))
 		if desc := milestone.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("<b>Description:</b> %s\n", desc)
+			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
 		}
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Milestone", e.GetMilestone().GetHTMLURL())
 }
 
-func HandleMetaEvent(e *github.MetaEvent) string {
-	msg := "⚙️ <b>Meta Event</b>\n"
+func HandleMetaEvent(e *github.MetaEvent) (string, *InlineKeyboardMarkup) {
+	msg := "⚙️ *Meta Event*\n\n"
 
 	if id := e.GetHookID(); id != 0 {
-		msg += fmt.Sprintf("<b>Hook ID:</b> %d\n", id)
+		msg += fmt.Sprintf("*Hook ID:* %d\n", id)
 	}
 
 	if repo := e.GetRepo(); repo != nil {
-		msg += fmt.Sprintf("<b>Repo:</b> %s\n", repo.GetName())
+		msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(repo.GetFullName()))
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s\n", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s\n", FormatUser(sender.GetLogin()))
 	}
 
 	if org := e.GetOrg(); org != nil {
-		msg += fmt.Sprintf("<b>Org:</b> %s\n", org.GetLogin())
+		msg += fmt.Sprintf("*Org:* %s\n", EscapeMarkdownV2(org.GetLogin()))
 	}
 
 	if install := e.GetInstallation(); install != nil {
-		msg += fmt.Sprintf("<b>Install ID:</b> %d", install.GetID())
+		msg += fmt.Sprintf("*Install ID:* %d", install.GetID())
 	}
 
-	return msg
+	return msg, nil
 }
-func HandleMembershipEvent(e *github.MembershipEvent) string {
+func HandleMembershipEvent(e *github.MembershipEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "🚫 <b>No membership event data</b>"
+		return "🚫 *No membership event data*", nil
 	}
 
-	msg := fmt.Sprintf("👥 <b>Membership %s</b>\n", e.GetAction())
+	msg := fmt.Sprintf("👥 *Membership %s*\n\n", EscapeMarkdownV2(e.GetAction()))
 
 	if scope := e.GetScope(); scope != "" {
-		msg += fmt.Sprintf("<b>Scope:</b> %s\n", scope)
+		msg += fmt.Sprintf("*Scope:* %s\n", EscapeMarkdownV2(scope))
 	}
 
 	if member := e.GetMember(); member != nil {
-		msg += fmt.Sprintf("<b>Member:</b> %s\n", member.GetLogin())
+		msg += fmt.Sprintf("*Member:* %s\n", FormatUser(member.GetLogin()))
 	}
 
 	if team := e.GetTeam(); team != nil {
-		msg += fmt.Sprintf("<b>Team:</b> %s\n", team.GetName())
+		msg += fmt.Sprintf("*Team:* %s\n", EscapeMarkdownV2(team.GetName()))
 		if desc := team.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("<b>Description:</b> %s\n", desc)
+			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
 		}
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Team", e.GetTeam().GetHTMLURL())
 }
 
-func HandleDeploymentEvent(e *github.DeploymentEvent) string {
-	msg := "🚀 <b>Deployment Event</b>\n"
+func HandleDeploymentEvent(e *github.DeploymentEvent) (string, *InlineKeyboardMarkup) {
+	msg := "🚀 *Deployment Event*\n\n"
 
 	if deploy := e.GetDeployment(); deploy != nil {
-		msg += fmt.Sprintf("<b>ID:</b> %d\n", deploy.GetID())
+		msg += fmt.Sprintf("*ID:* %d\n", deploy.GetID())
 		if desc := deploy.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("<b>Description:</b> %s\n", desc)
+			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
 		}
 	}
 
 	if repo := e.GetRepo(); repo != nil {
-		msg += fmt.Sprintf("<b>Repo:</b> %s\n", repo.GetName())
+		msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(repo.GetName()))
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Deployment", e.GetDeployment().GetURL())
 }
 
-func HandleLabelEvent(e *github.LabelEvent) string {
+func HandleLabelEvent(e *github.LabelEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "🏷️ <b>No label event data</b>"
+		return "🏷️ *No label event data*", nil
 	}
 
-	msg := fmt.Sprintf("🏷️ <b>Label %s</b>\n", e.GetAction())
+	msg := fmt.Sprintf("🏷️ *Label %s*\n\n", EscapeMarkdownV2(e.GetAction()))
 
 	if label := e.GetLabel(); label != nil {
-		msg += fmt.Sprintf("<b>Name:</b> %s\n", label.GetName())
-		msg += fmt.Sprintf("<b>Color:</b> #%s\n", label.GetColor())
+		msg += fmt.Sprintf("*Name:* %s\n", EscapeMarkdownV2(label.GetName()))
+		msg += fmt.Sprintf("*Color:* `#%s`\n", EscapeMarkdownV2(label.GetColor()))
 		if desc := label.GetDescription(); desc != "" {
-			msg += fmt.Sprintf("<b>Description:</b> %s\n", desc)
+			msg += fmt.Sprintf("*Description:* %s\n", EscapeMarkdownV2(desc))
 		}
 	}
 
 	if changes := e.GetChanges(); changes != nil {
 		if title := changes.GetTitle(); title != nil && title.GetFrom() != "" {
-			msg += fmt.Sprintf("<b>Previous Name:</b> %s\n", title.GetFrom())
+			msg += fmt.Sprintf("*Previous Name:* %s\n", EscapeMarkdownV2(title.GetFrom()))
 		}
 		if body := changes.GetBody(); body != nil && body.GetFrom() != "" {
-			msg += fmt.Sprintf("<b>Previous Desc:</b> %s\n", body.GetFrom())
+			msg += fmt.Sprintf("*Previous Desc:* %s\n", EscapeMarkdownV2(body.GetFrom()))
 		}
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Repository", e.GetRepo().GetHTMLURL())
 }
 
-func HandleMarketplacePurchaseEvent(e *github.MarketplacePurchaseEvent) string {
+func HandleMarketplacePurchaseEvent(e *github.MarketplacePurchaseEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "🛒 <b>No marketplace data</b>"
+		return "🛒 *No marketplace data*", nil
 	}
 
-	msg := fmt.Sprintf("🛒 <b>Marketplace %s</b>\n", e.GetAction())
+	msg := fmt.Sprintf("🛒 *Marketplace %s*\n\n", EscapeMarkdownV2(e.GetAction()))
 
 	if purchase := e.GetMarketplacePurchase(); purchase != nil {
 		if plan := purchase.GetPlan(); plan != nil {
-			msg += fmt.Sprintf("<b>Plan:</b> %s\n", plan.GetName())
+			msg += fmt.Sprintf("*Plan:* %s\n", EscapeMarkdownV2(plan.GetName()))
 		}
-		msg += fmt.Sprintf("<b>Billing:</b> %s\n", purchase.GetBillingCycle())
-		msg += fmt.Sprintf("<b>Units:</b> %d\n", purchase.GetUnitCount())
+		msg += fmt.Sprintf("*Billing:* %s\n", EscapeMarkdownV2(purchase.GetBillingCycle()))
+		msg += fmt.Sprintf("*Units:* %d\n", purchase.GetUnitCount())
 		if nextBill := purchase.GetNextBillingDate(); !nextBill.IsZero() {
-			msg += fmt.Sprintf("<b>Next Bill:</b> %s\n", nextBill.Format("2006-01-02"))
+			msg += fmt.Sprintf("*Next Bill:* %s\n", EscapeMarkdownV2(nextBill.Format("2006-01-02")))
 		}
 
 		if account := purchase.GetAccount(); account != nil {
-			msg += fmt.Sprintf("<b>Account:</b> %s (%s)\n",
-				account.GetLogin(),
-				account.GetType())
+			msg += fmt.Sprintf("*Account:* %s (%s)\n",
+				FormatUser(account.GetLogin()),
+				EscapeMarkdownV2(account.GetType()))
 		}
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return msg, nil
 }
 
-func HandleGollumEvent(e *github.GollumEvent) string {
+func HandleGollumEvent(e *github.GollumEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "📚 <b>No wiki update data available</b>"
+		return "📚 *No wiki update data available*", nil
 	}
 
 	var msg strings.Builder
-	msg.WriteString("📚 <b>Wiki Update</b>\n")
+	msg.WriteString("📚 *Wiki Update*\n\n")
 	if repo := e.GetRepo(); repo != nil {
-		msg.WriteString(fmt.Sprintf("<b>Repository:</b> <a href=\"%s\">%s</a>\n",
-			repo.GetHTMLURL(),
-			repo.GetFullName()))
+		msg.WriteString(fmt.Sprintf("*Repository:* %s\n",
+			FormatRepo(repo.GetFullName())))
 	}
 
 	if org := e.GetOrg(); org != nil {
-		msg.WriteString(fmt.Sprintf("<b>Organization:</b> %s\n", org.GetLogin()))
+		msg.WriteString(fmt.Sprintf("*Organization:* %s\n", EscapeMarkdownV2(org.GetLogin())))
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg.WriteString(fmt.Sprintf("<b>Edited by:</b> %s\n", sender.GetLogin()))
+		msg.WriteString(fmt.Sprintf("*Edited by:* %s\n", FormatUser(sender.GetLogin())))
 	}
 
 	if e.Pages != nil && len(e.Pages) > 0 {
-		msg.WriteString("\n<b>Page Changes:</b>\n")
+		msg.WriteString("\n*Page Changes:*\n")
 		for _, page := range e.Pages {
 			if page == nil {
 				continue
@@ -1149,27 +1127,27 @@ func HandleGollumEvent(e *github.GollumEvent) string {
 			}
 
 			if pageTitle != "" {
-				msg.WriteString(fmt.Sprintf("%s <b>%s</b> (%s)\n",
+				msg.WriteString(fmt.Sprintf("%s *%s* (%s)\n",
 					emoji,
-					pageTitle,
-					action))
+					EscapeMarkdownV2(pageTitle),
+					EscapeMarkdownV2(action)))
 			}
 			if page.Summary != nil && *page.Summary != "" {
-				msg.WriteString(fmt.Sprintf("<i>Summary:</i> %s\n", *page.Summary))
+				msg.WriteString(fmt.Sprintf("_Summary:_ %s\n", EscapeMarkdownV2(*page.Summary)))
 			}
 
 			if page.SHA != nil && *page.SHA != "" {
-				msg.WriteString(fmt.Sprintf("<i>Revision:</i> %s\n", (*page.SHA)[:7]))
+				msg.WriteString(fmt.Sprintf("_Revision:_ %s\n", EscapeMarkdownV2((*page.SHA)[:7])))
 			}
 			if page.HTMLURL != nil && *page.HTMLURL != "" {
-				msg.WriteString(fmt.Sprintf("<a href=\"%s\">View Page</a>\n", *page.HTMLURL))
+				msg.WriteString(fmt.Sprintf("[View Page](%s)\n", EscapeMarkdownV2(*page.HTMLURL)))
 			}
 
 			msg.WriteString("\n")
 		}
 	}
 
-	return msg.String()
+	return msg.String(), nil
 }
 
 func getActionEmoji(action string) string {
@@ -1185,165 +1163,176 @@ func getActionEmoji(action string) string {
 	}
 }
 
-func HandleDeployKeyEvent(e *github.DeployKeyEvent) string {
+func HandleDeployKeyEvent(e *github.DeployKeyEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "🔑 <b>No deploy key data</b>"
+		return "🔑 *No deploy key data*", nil
 	}
 
-	msg := fmt.Sprintf("🔑 <b>Deploy Key %s</b>\n", e.GetAction())
+	msg := fmt.Sprintf("🔑 *Deploy Key %s*\n\n", EscapeMarkdownV2(e.GetAction()))
 
 	if key := e.GetKey(); key != nil {
-		msg += fmt.Sprintf("<b>Title:</b> %s\n", key.GetTitle())
+		msg += fmt.Sprintf("*Title:* %s\n", EscapeMarkdownV2(key.GetTitle()))
 		if url := key.GetURL(); url != "" {
-			msg += fmt.Sprintf("<a href=\"%s\">View Key</a>\n", url)
+			msg += fmt.Sprintf("[View Key](%s)\n", EscapeMarkdownV2(url))
 		}
 	}
 
-	msg += fmt.Sprintf("<b>Repo:</b> %s\n", e.GetRepo().GetName())
+	msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(e.GetRepo().GetName()))
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Repository", e.GetRepo().GetHTMLURL())
 }
 
-func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) string {
+func HandleCheckSuiteEvent(e *github.CheckSuiteEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "✅ <b>No check suite data</b>"
+		return "✅ *No check suite data*", nil
 	}
 
 	suite := e.GetCheckSuite()
 	var msg strings.Builder
 
 	action := html.EscapeString(strings.Title(e.GetAction()))
-	msg.WriteString(fmt.Sprintf("✅ <b>Check Suite: %s</b>\n\n", action))
+	msg.WriteString(fmt.Sprintf("✅ *Check Suite: %s*\n\n", EscapeMarkdownV2(action)))
 
 	if suite != nil {
 		status := html.EscapeString(suite.GetStatus())
-		msg.WriteString(fmt.Sprintf("• <b>Status:</b> %s\n", status))
+		msg.WriteString(fmt.Sprintf("• *Status:* %s\n", EscapeMarkdownV2(status)))
 
 		if conclusion := suite.GetConclusion(); conclusion != "" {
-			msg.WriteString(fmt.Sprintf("• <b>Result:</b> %s\n", html.EscapeString(conclusion)))
-		}
-
-		if url := suite.GetURL(); url != "" {
-			msg.WriteString(fmt.Sprintf("\n<a href=\"%s\">🔗 View Details</a>\n", html.EscapeString(url)))
+			msg.WriteString(fmt.Sprintf("• *Result:* %s\n", EscapeMarkdownV2(conclusion)))
 		}
 	}
 
-	repo := html.EscapeString(e.GetRepo().GetFullName())
-	msg.WriteString(fmt.Sprintf("\n<b>Repository:</b> %s\n", repo))
+	msg.WriteString(fmt.Sprintf("\n*Repository:* %s\n", FormatRepo(e.GetRepo().GetFullName())))
 
 	if sender := e.GetSender(); sender != nil {
 		username := html.EscapeString(sender.GetLogin())
-		msg.WriteString(fmt.Sprintf("<b>Triggered by:</b> @%s", username))
+		msg.WriteString(fmt.Sprintf("*Triggered by:* @%s", EscapeMarkdownV2(username)))
 	}
 
-	return msg.String()
+	return FormatMessageWithButton(msg.String(), "View Details", e.GetCheckSuite().GetURL())
 }
 
-func HandleCheckRunEvent(e *github.CheckRunEvent) string {
+func HandleCheckRunEvent(e *github.CheckRunEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "⚙️ <b>No check run data</b>"
+		return "⚙️ *No check run data*", nil
 	}
 
 	check := e.GetCheckRun()
 	var msg strings.Builder
 
 	action := html.EscapeString(strings.Title(e.GetAction()))
-	msg.WriteString(fmt.Sprintf("⚙️ <b>Check Run: %s</b>\n\n", action))
+	msg.WriteString(fmt.Sprintf("⚙️ *Check Run: %s*\n\n", EscapeMarkdownV2(action)))
 
 	if check != nil {
 		name := html.EscapeString(check.GetName())
 		status := html.EscapeString(check.GetStatus())
-		msg.WriteString(fmt.Sprintf("• <b>Name:</b> %s\n", name))
-		msg.WriteString(fmt.Sprintf("• <b>Status:</b> %s\n", status))
+		msg.WriteString(fmt.Sprintf("• *Name:* %s\n", EscapeMarkdownV2(name)))
+		msg.WriteString(fmt.Sprintf("• *Status:* %s\n", EscapeMarkdownV2(status)))
 
 		if conclusion := check.GetConclusion(); conclusion != "" {
-			msg.WriteString(fmt.Sprintf("• <b>Result:</b> %s\n", html.EscapeString(conclusion)))
+			msg.WriteString(fmt.Sprintf("• *Result:* %s\n", EscapeMarkdownV2(conclusion)))
 		}
 
 		if !check.GetStartedAt().IsZero() {
-			msg.WriteString(fmt.Sprintf("• <b>Started:</b> %s\n", check.GetStartedAt().Format("2006-01-02 15:04")))
+			msg.WriteString(fmt.Sprintf("• *Started:* %s\n", EscapeMarkdownV2(check.GetStartedAt().Format("2006-01-02 15:04"))))
 		}
 
 		if !check.GetCompletedAt().IsZero() {
-			msg.WriteString(fmt.Sprintf("• <b>Completed:</b> %s\n", check.GetCompletedAt().Format("2006-01-02 15:04")))
-		}
-
-		if url := check.GetHTMLURL(); url != "" {
-			msg.WriteString(fmt.Sprintf("\n<a href=\"%s\">🔗 View Details</a>\n", html.EscapeString(url)))
+			msg.WriteString(fmt.Sprintf("• *Completed:* %s\n", EscapeMarkdownV2(check.GetCompletedAt().Format("2006-01-02 15:04"))))
 		}
 	}
 
-	repo := html.EscapeString(e.GetRepo().GetFullName())
-	msg.WriteString(fmt.Sprintf("\n<b>Repository:</b> %s\n", repo))
+	msg.WriteString(fmt.Sprintf("\n*Repository:* %s\n", FormatRepo(e.GetRepo().GetFullName())))
 
 	if sender := e.GetSender(); sender != nil {
 		username := html.EscapeString(sender.GetLogin())
-		msg.WriteString(fmt.Sprintf("<b>Triggered by:</b> @%s", username))
+		msg.WriteString(fmt.Sprintf("*Triggered by:* @%s", EscapeMarkdownV2(username)))
 	}
 
-	return msg.String()
+	return FormatMessageWithButton(msg.String(), "View Details", e.GetCheckRun().GetHTMLURL())
 }
 
-func HandleDeploymentStatusEvent(e *github.DeploymentStatusEvent) string {
+func HandleDeploymentStatusEvent(e *github.DeploymentStatusEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "🚦 <b>No deployment status data</b>"
+		return "🚦 *No deployment status data*", nil
 	}
 
 	status := e.GetDeploymentStatus()
-	msg := fmt.Sprintf("🚦 <b>Deployment %s</b>\n", status.GetState())
+	msg := fmt.Sprintf("🚦 *Deployment %s*\n\n", EscapeMarkdownV2(status.GetState()))
 
 	if desc := status.GetDescription(); desc != "" {
-		msg += fmt.Sprintf("<b>Status:</b> %s\n", desc)
+		msg += fmt.Sprintf("*Status:* %s\n", EscapeMarkdownV2(desc))
 	}
 
-	msg += fmt.Sprintf("<b>Repo:</b> %s\n", e.GetRepo().GetName())
+	msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(e.GetRepo().GetName()))
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Deployment", e.GetDeploymentStatus().GetDeploymentURL())
 }
 
-func HandleSecurityAdvisoryEvent(e *github.SecurityAdvisoryEvent) string {
+func HandleSecurityAdvisoryEvent(e *github.SecurityAdvisoryEvent) (string, *InlineKeyboardMarkup) {
 	if e == nil {
-		return "⚠️ <b>No security advisory data</b>"
+		return "⚠️ *No security advisory data*", nil
 	}
 
 	adv := e.GetSecurityAdvisory()
-	msg := fmt.Sprintf("⚠️ <b>Security Advisory %s</b>\n", e.GetAction())
+	msg := fmt.Sprintf("⚠️ *Security Advisory %s*\n\n", EscapeMarkdownV2(e.GetAction()))
 
 	if adv != nil {
-		msg += fmt.Sprintf("<b>Summary:</b> %s\n", adv.GetSummary())
+		msg += fmt.Sprintf("*Summary:* %s\n", EscapeMarkdownV2(adv.GetSummary()))
 		if sev := adv.GetSeverity(); sev != "" {
-			msg += fmt.Sprintf("<b>Severity:</b> %s\n", sev)
+			msg += fmt.Sprintf("*Severity:* %s\n", EscapeMarkdownV2(sev))
 		}
 		if cve := adv.GetCVEID(); cve != "" {
-			msg += fmt.Sprintf("<b>CVE:</b> %s\n", cve)
+			msg += fmt.Sprintf("*CVE:* %s\n", EscapeMarkdownV2(cve))
 		}
 		if url := adv.GetURL(); url != "" {
-			msg += fmt.Sprintf("<a href=\"%s\">View Advisory</a>\n", url)
+			msg += fmt.Sprintf("[View Advisory](%s)\n", EscapeMarkdownV2(url))
 		}
 		if author := adv.GetAuthor(); author != nil {
-			msg += fmt.Sprintf("<b>Reported by:</b> %s\n", author.GetLogin())
+			msg += fmt.Sprintf("*Reported by:* %s\n", FormatUser(author.GetLogin()))
 		}
 	}
 
 	if repo := e.GetRepository(); repo != nil {
-		msg += fmt.Sprintf("<b>Repo:</b> %s\n", repo.GetFullName())
+		msg += fmt.Sprintf("*Repository:* %s\n", FormatRepo(repo.GetFullName()))
 	}
 
 	if org := e.GetOrganization(); org != nil {
-		msg += fmt.Sprintf("<b>Org:</b> %s\n", org.GetLogin())
+		msg += fmt.Sprintf("*Org:* %s\n", EscapeMarkdownV2(org.GetLogin()))
 	}
 
 	if sender := e.GetSender(); sender != nil {
-		msg += fmt.Sprintf("<b>By:</b> %s", sender.GetLogin())
+		msg += fmt.Sprintf("*By:* %s", FormatUser(sender.GetLogin()))
 	}
 
-	return msg
+	return FormatMessageWithButton(msg, "View Advisory", e.GetSecurityAdvisory().GetHTMLURL())
+}
+
+func HandleInstallationEvent(e *github.InstallationEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	sender := e.GetSender().GetLogin()
+
+	var msg string
+	switch action {
+	case "created":
+		msg = "🎉 *New installation*\\! Welcome aboard\\! 🎉\n\n"
+		msg += "This bot will now post updates from the repositories you've granted access to\\.\n\n"
+		msg += fmt.Sprintf("Installation by %s\\.", FormatUser(sender))
+	case "deleted":
+		msg = "🗑️ *Installation uninstalled*\\! Goodbye\\! 👋\n\n"
+		msg += "This bot will no longer post updates\\.\n\n"
+		msg += fmt.Sprintf("Uninstalled by %s\\.", FormatUser(sender))
+	default:
+		msg = fmt.Sprintf("🤖 *Unknown installation action:* `%s`", EscapeMarkdownV2(action))
+	}
+
+	return msg, nil
 }
