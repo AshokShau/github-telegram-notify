@@ -78,6 +78,8 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	// Handle advisory and security-related events
 	case *github.SecurityAdvisoryEvent:
 		message, markup = utils.HandleSecurityAdvisoryEvent(e)
+	case *github.RepositoryVulnerabilityAlertEvent:
+		message, markup = utils.HandleRepositoryVulnerabilityAlertEvent(e)
 	case *github.MembershipEvent:
 		message, markup = utils.HandleMembershipEvent(e)
 	case *github.MilestoneEvent:
@@ -131,7 +133,7 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	// Catch-all fallback for unhandled events
 	default:
 		log.Printf("Unhandled event type: %s\n", github.WebHookType(r))
-		message = fmt.Sprintf("Unhandled event type: %s", github.WebHookType(r))
+		message = fmt.Sprintf("🤷‍♀️ *Unhandled Event: %s*", github.WebHookType(r))
 	}
 
 	chatID := r.URL.Query().Get("chat_id")

@@ -878,6 +878,24 @@ func HandlePingEvent(e *github.PingEvent) (string, *InlineKeyboardMarkup) {
 
 	return msg, nil
 }
+
+func HandleRepositoryVulnerabilityAlertEvent(e *github.RepositoryVulnerabilityAlertEvent) (string, *InlineKeyboardMarkup) {
+	alert := e.GetAlert()
+	repo := e.Repository
+
+	msg := fmt.Sprintf(
+		"🚨 *Vulnerability Alert: %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Severity:* %s\n"+
+			"*Package:* %s\n",
+		EscapeMarkdownV2(alert.GetAffectedPackageName()),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(alert.GetSeverity()),
+		EscapeMarkdownV2(alert.GetAffectedPackageName()),
+	)
+
+	return FormatMessageWithButton(msg, "View Alert", fmt.Sprintf("%s/security/advisories/%s", repo.GetHTMLURL(), alert.GetGitHubSecurityAdvisoryID()))
+}
 func HandlePageBuildEvent(e *github.PageBuildEvent) (string, *InlineKeyboardMarkup) {
 	msg := "🏗️ *GitHub Pages Build*\n\n"
 
