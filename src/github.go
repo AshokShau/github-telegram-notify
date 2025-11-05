@@ -80,6 +80,60 @@ func GitHubWebhook(w http.ResponseWriter, r *http.Request) {
 		message, markup = utils.HandleSecurityAdvisoryEvent(e)
 	case *github.RepositoryVulnerabilityAlertEvent:
 		message, markup = utils.HandleRepositoryVulnerabilityAlertEvent(e)
+	case *github.BranchProtectionRuleEvent:
+		message, markup = utils.HandleBranchProtectionRuleEvent(e)
+	case *github.BranchProtectionConfigurationEvent:
+		message, markup = utils.HandleBranchProtectionConfigurationEvent(e)
+	case *github.ContentReferenceEvent:
+		message, markup = utils.HandleContentReferenceEvent(e)
+	case *github.CustomPropertyEvent:
+		message, markup = utils.HandleCustomPropertyEvent(e)
+	case *github.CustomPropertyValuesEvent:
+		message, markup = utils.HandleCustomPropertyValuesEvent(e)
+	case *github.DependabotAlertEvent:
+		message, markup = utils.HandleDependabotAlertEvent(e)
+	case *github.DeploymentProtectionRuleEvent:
+		message, markup = utils.HandleDeploymentProtectionRuleEvent(e)
+	case *github.DeploymentReviewEvent:
+		message, markup = utils.HandleDeploymentReviewEvent(e)
+	case *github.DiscussionCommentEvent:
+		message, markup = utils.HandleDiscussionCommentEvent(e)
+	case *github.DiscussionEvent:
+		message, markup = utils.HandleDiscussionEvent(e)
+	case *github.GitHubAppAuthorizationEvent:
+		message, markup = utils.HandleGitHubAppAuthorizationEvent(e)
+	case *github.InstallationRepositoriesEvent:
+		message, markup = utils.HandleInstallationRepositoriesEvent(e)
+	case *github.InstallationTargetEvent:
+		message, markup = utils.HandleInstallationTargetEvent(e)
+	case *github.MergeGroupEvent:
+		message, markup = utils.HandleMergeGroupEvent(e)
+	case *github.PersonalAccessTokenRequestEvent:
+		message, markup = utils.HandlePersonalAccessTokenRequestEvent(e)
+	case *github.ProjectV2Event:
+		message, markup = utils.HandleProjectV2Event(e)
+	case *github.ProjectV2ItemEvent:
+		message, markup = utils.HandleProjectV2ItemEvent(e)
+	case *github.PullRequestReviewThreadEvent:
+		message, markup = utils.HandlePullRequestReviewThreadEvent(e)
+	case *github.PullRequestTargetEvent:
+		message, markup = utils.HandlePullRequestTargetEvent(e)
+	case *github.RegistryPackageEvent:
+		message, markup = utils.HandleRegistryPackageEvent(e)
+	case *github.RepositoryImportEvent:
+		message, markup = utils.HandleRepositoryImportEvent(e)
+	case *github.RepositoryRulesetEvent:
+		message, markup = utils.HandleRepositoryRulesetEvent(e)
+	case *github.SecretScanningAlertEvent:
+		message, markup = utils.HandleSecretScanningAlertEvent(e)
+	case *github.SecretScanningAlertLocationEvent:
+		message, markup = utils.HandleSecretScanningAlertLocationEvent(e)
+	case *github.SecurityAndAnalysisEvent:
+		message, markup = utils.HandleSecurityAndAnalysisEvent(e)
+	case *github.SponsorshipEvent:
+		message, markup = utils.HandleSponsorshipEvent(e)
+	case *github.UserEvent:
+		message, markup = utils.HandleUserEvent(e)
 	case *github.MembershipEvent:
 		message, markup = utils.HandleMembershipEvent(e)
 	case *github.MilestoneEvent:

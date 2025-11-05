@@ -879,6 +879,542 @@ func HandlePingEvent(e *github.PingEvent) (string, *InlineKeyboardMarkup) {
 	return msg, nil
 }
 
+func HandleSponsorshipEvent(e *github.SponsorshipEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	sender := e.GetSender()
+	sponsorship := e.GetChanges()
+
+	msg := fmt.Sprintf(
+		"💖 *Sponsorship %s*\n\n"+
+			"*Sponsor:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatUser(sender.GetLogin()),
+	)
+	if sponsorship != nil && sponsorship.Tier != nil {
+		msg += fmt.Sprintf("*Tier:* `%s` -> `%s`\n", sponsorship.Tier.GetFrom(), "new_tier")
+	}
+
+	return FormatMessageWithButton(msg, "View Sponsorship", sender.GetHTMLURL())
+}
+
+func HandleUserEvent(e *github.UserEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	user := e.GetUser()
+
+	msg := fmt.Sprintf(
+		"👤 *User %s*\n\n"+
+			"*User:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatUser(user.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View User", user.GetHTMLURL())
+}
+
+func HandleRepositoryImportEvent(e *github.RepositoryImportEvent) (string, *InlineKeyboardMarkup) {
+	status := e.GetStatus()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"📥 *Repository Import %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(status),
+		FormatRepo(repo.GetFullName()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Repository", repo.GetHTMLURL())
+}
+
+func HandleRepositoryRulesetEvent(e *github.RepositoryRulesetEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepository()
+	sender := e.GetSender()
+	ruleset := e.RepositoryRuleset
+
+	msg := fmt.Sprintf(
+		"📜 *Repository Ruleset %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Ruleset:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(ruleset.Name),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Ruleset", fmt.Sprintf("%s/settings/rules/%d", repo.GetHTMLURL(), ruleset.GetID()))
+}
+
+func HandleSecretScanningAlertEvent(e *github.SecretScanningAlertEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	alert := e.GetAlert()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🤫 *Secret Scanning Alert %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Secret Type:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(alert.GetSecretType()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Alert", alert.GetHTMLURL())
+}
+
+func HandleSecretScanningAlertLocationEvent(e *github.SecretScanningAlertLocationEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"📍 *Secret Scanning Alert Location %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Alert", e.GetAlert().GetHTMLURL())
+}
+
+func HandleSecurityAndAnalysisEvent(e *github.SecurityAndAnalysisEvent) (string, *InlineKeyboardMarkup) {
+	repo := e.GetRepository()
+	sender := e.GetSender()
+	changes := e.Changes
+
+	var fromStatus string
+	if changes.From != nil && changes.From.SecurityAndAnalysis != nil && changes.From.GetSecurityAndAnalysis() != nil && changes.From.GetSecurityAndAnalysis().AdvancedSecurity != nil {
+		fromStatus = changes.From.GetSecurityAndAnalysis().AdvancedSecurity.GetStatus()
+	}
+
+	msg := fmt.Sprintf(
+		"🔒 *Security & Analysis Settings Updated*\n\n"+
+			"*Repository:* %s\n"+
+			"*From Status:* `%s`\n"+
+			"*By:* %s\n",
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(fromStatus),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Security Settings", fmt.Sprintf("%s/settings/security_analysis", repo.GetHTMLURL()))
+}
+
+func HandlePullRequestReviewThreadEvent(e *github.PullRequestReviewThreadEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+	pr := e.GetPullRequest()
+
+	msg := fmt.Sprintf(
+		"🧵 *PR Review Thread %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Pull Request:* [%s](%s)\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(pr.GetTitle()),
+		EscapeMarkdownV2URL(pr.GetHTMLURL()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Thread", e.GetThread().Comments[0].GetHTMLURL())
+}
+
+func HandlePullRequestTargetEvent(e *github.PullRequestTargetEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+	pr := e.GetPullRequest()
+
+	msg := fmt.Sprintf(
+		"🎯 *PR Target %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Pull Request:* [%s](%s)\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(pr.GetTitle()),
+		EscapeMarkdownV2URL(pr.GetHTMLURL()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View PR", pr.GetHTMLURL())
+}
+
+func HandleRegistryPackageEvent(e *github.RegistryPackageEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepository()
+	sender := e.GetSender()
+	pkg := e.RegistryPackage
+
+	msg := fmt.Sprintf(
+		"📦 *Registry Package %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Package:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(pkg.GetName()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Package", pkg.GetHTMLURL())
+}
+
+func HandleMergeGroupEvent(e *github.MergeGroupEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🔄 *Merge Group %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Repository", repo.GetHTMLURL())
+}
+
+func HandlePersonalAccessTokenRequestEvent(e *github.PersonalAccessTokenRequestEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	org := e.GetOrg()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🔑 *Personal Access Token Request %s*\n\n"+
+			"*Organization:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		EscapeMarkdownV2(org.GetLogin()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Organization Settings", fmt.Sprintf("https://github.com/organizations/%s/settings/personal-access-tokens", org.GetLogin()))
+}
+
+func HandleProjectV2Event(e *github.ProjectV2Event) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	org := e.GetOrg()
+	sender := e.GetSender()
+	project := e.ProjectsV2
+
+	msg := fmt.Sprintf(
+		"📋 *Project %s*\n\n"+
+			"*Organization:* %s\n"+
+			"*Project:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		EscapeMarkdownV2(org.GetLogin()),
+		EscapeMarkdownV2(project.GetTitle()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Project", project.GetHTMLURL())
+}
+
+func HandleProjectV2ItemEvent(e *github.ProjectV2ItemEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	org := e.GetOrg()
+	sender := e.GetSender()
+	item := e.ProjectV2Item
+
+	msg := fmt.Sprintf(
+		"📄 *Project Item %s*\n\n"+
+			"*Organization:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		EscapeMarkdownV2(org.GetLogin()),
+		FormatUser(sender.GetLogin()),
+	)
+	if item.GetContentType() == "PullRequest" {
+		msg += fmt.Sprintf("*Pull Request:* %s\n", item.GetContentNodeID())
+	} else if item.GetContentType() == "Issue" {
+		msg += fmt.Sprintf("*Issue:* %s\n", item.GetContentNodeID())
+	}
+
+	return FormatMessageWithButton(msg, "View Item", item.GetProjectURL())
+}
+
+func HandleGitHubAppAuthorizationEvent(e *github.GitHubAppAuthorizationEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🔒 *GitHub App Authorization %s*\n\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return msg, nil
+}
+
+func HandleInstallationRepositoriesEvent(e *github.InstallationRepositoriesEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	sender := e.GetSender()
+	reposAdded := e.RepositoriesAdded
+	reposRemoved := e.RepositoriesRemoved
+
+	msg := fmt.Sprintf(
+		"📦 *Installation Repositories %s*\n\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatUser(sender.GetLogin()),
+	)
+	if len(reposAdded) > 0 {
+		var repoNames []string
+		for _, r := range reposAdded {
+			repoNames = append(repoNames, FormatRepo(r.GetFullName()))
+		}
+		msg += fmt.Sprintf("*Repositories Added:*\n%s\n", strings.Join(repoNames, "\n"))
+	}
+	if len(reposRemoved) > 0 {
+		var repoNames []string
+		for _, r := range reposRemoved {
+			repoNames = append(repoNames, FormatRepo(r.GetFullName()))
+		}
+		msg += fmt.Sprintf("*Repositories Removed:*\n%s\n", strings.Join(repoNames, "\n"))
+	}
+
+	return FormatMessageWithButton(msg, "View Installation", e.GetInstallation().GetHTMLURL())
+}
+
+func HandleInstallationTargetEvent(e *github.InstallationTargetEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	sender := e.GetSender()
+	target := e.GetAccount()
+
+	msg := fmt.Sprintf(
+		"🎯 *Installation Target %s*\n\n"+
+			"*Target:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatUser(target.GetLogin()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Installation", e.GetInstallation().GetHTMLURL())
+}
+
+func HandleDiscussionCommentEvent(e *github.DiscussionCommentEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+	discussion := e.GetDiscussion()
+	comment := e.GetComment()
+
+	msg := fmt.Sprintf(
+		"💬 *Discussion Comment %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Discussion:* [%s](%s)\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(discussion.GetTitle()),
+		EscapeMarkdownV2URL(discussion.GetHTMLURL()),
+		FormatUser(sender.GetLogin()),
+	)
+	if action != "deleted" {
+		msg += fmt.Sprintf("*Comment:* %s\n", FormatTextWithMarkdown(comment.GetBody()))
+	}
+
+	return FormatMessageWithButton(msg, "View Comment", comment.GetHTMLURL())
+}
+
+func HandleDiscussionEvent(e *github.DiscussionEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+	discussion := e.GetDiscussion()
+
+	msg := fmt.Sprintf(
+		"📣 *Discussion %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Title:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(discussion.GetTitle()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Discussion", discussion.GetHTMLURL())
+}
+
+func HandleDependabotAlertEvent(e *github.DependabotAlertEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	alert := e.GetAlert()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🤖 *Dependabot Alert %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Package:* `%s`\n"+
+			"*Severity:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(alert.GetSecurityVulnerability().Package.GetName()),
+		EscapeMarkdownV2(alert.GetSecurityVulnerability().GetSeverity()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Alert", alert.GetHTMLURL())
+}
+
+func HandleDeploymentProtectionRuleEvent(e *github.DeploymentProtectionRuleEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🛡️ *Deployment Protection Rule %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Environment:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(e.GetEnvironment()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Deployment", e.GetDeployment().GetURL())
+}
+
+func HandleDeploymentReviewEvent(e *github.DeploymentReviewEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🔎 *Deployment Review %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Environment:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(e.GetEnvironment()),
+		FormatUser(sender.GetLogin()),
+	)
+	if e.Comment != nil {
+		msg += fmt.Sprintf("*Comment:* %s\n", EscapeMarkdownV2(e.GetComment()))
+	}
+
+	return FormatMessageWithButton(msg, "View Workflow Run", e.GetWorkflowRun().GetHTMLURL())
+}
+
+func HandleContentReferenceEvent(e *github.ContentReferenceEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.GetRepo()
+	sender := e.GetSender()
+	ref := e.GetContentReference()
+
+	msg := fmt.Sprintf(
+		"🔗 *Content Reference %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*Reference:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		EscapeMarkdownV2(ref.GetReference()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Repository", repo.GetHTMLURL())
+}
+
+func HandleCustomPropertyEvent(e *github.CustomPropertyEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	org := e.GetOrg()
+	sender := e.GetSender()
+	prop := e.Definition
+
+	msg := fmt.Sprintf(
+		"📝 *Custom Property %s*\n\n"+
+			"*Organization:* %s\n"+
+			"*Property Name:* `%s`\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		EscapeMarkdownV2(org.GetLogin()),
+		EscapeMarkdownV2(prop.GetPropertyName()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Organization Settings", fmt.Sprintf("https://github.com/organizations/%s/settings/custom-properties", org.GetLogin()))
+}
+
+func HandleCustomPropertyValuesEvent(e *github.CustomPropertyValuesEvent) (string, *InlineKeyboardMarkup) {
+	repo := e.GetRepo()
+	sender := e.GetSender()
+
+	var props []string
+	for _, p := range e.NewPropertyValues {
+		props = append(props, fmt.Sprintf("`%s`: `%s`", p.PropertyName, p.Value))
+	}
+
+	msg := fmt.Sprintf(
+		"🔄 *Custom Property Values Updated*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n"+
+			"*New Values:*\n%s",
+		FormatRepo(repo.GetFullName()),
+		FormatUser(sender.GetLogin()),
+		strings.Join(props, "\n"),
+	)
+
+	return FormatMessageWithButton(msg, "View Repository Settings", fmt.Sprintf("%s/settings/custom-properties", repo.GetHTMLURL()))
+}
+
+func HandleBranchProtectionRuleEvent(e *github.BranchProtectionRuleEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.Repo
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🛡️ *Branch Protection Rule %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		FormatUser(sender.GetLogin()),
+	)
+	if e.Rule != nil {
+		msg += fmt.Sprintf("*Rule Name:* %s\n", EscapeMarkdownV2(e.Rule.GetName()))
+	}
+
+	return FormatMessageWithButton(msg, "View Branch Settings", fmt.Sprintf("%s/settings/branches", repo.GetHTMLURL()))
+}
+
+func HandleBranchProtectionConfigurationEvent(e *github.BranchProtectionConfigurationEvent) (string, *InlineKeyboardMarkup) {
+	action := e.GetAction()
+	repo := e.Repo
+	sender := e.GetSender()
+
+	msg := fmt.Sprintf(
+		"🛡️ *Branch Protection Configuration %s*\n\n"+
+			"*Repository:* %s\n"+
+			"*By:* %s\n",
+		EscapeMarkdownV2(action),
+		FormatRepo(repo.GetFullName()),
+		FormatUser(sender.GetLogin()),
+	)
+
+	return FormatMessageWithButton(msg, "View Repository", repo.GetHTMLURL())
+}
+
 func HandleRepositoryVulnerabilityAlertEvent(e *github.RepositoryVulnerabilityAlertEvent) (string, *InlineKeyboardMarkup) {
 	alert := e.GetAlert()
 	repo := e.Repository
