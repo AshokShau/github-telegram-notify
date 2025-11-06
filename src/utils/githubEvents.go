@@ -73,7 +73,7 @@ func HandlePullRequestEvent(event *github.PullRequestEvent) (string, *InlineKeyb
 	msg := fmt.Sprintf(
 		"*🚀 PR %s: %s*\n\n"+
 			"*Repository:* %s\n"+
-			"*By:* %s | *State:* %s\n",
+			"*By:* %s \\| *State:* %s\n",
 		EscapeMarkdownV2(strings.Title(action)),
 		EscapeMarkdownV2(title),
 		FormatRepo(repo),
@@ -256,7 +256,7 @@ func HandleForkEvent(event *github.ForkEvent) (string, *InlineKeyboardMarkup) {
 	sender := event.Sender.GetLogin()
 	msg := fmt.Sprintf(
 		"🍴 %s forked by %s\n\n"+
-			"✨ *Stars:* %d | 🍴 *Forks:* %d",
+			"✨ *Stars:* %d \\| 🍴 *Forks:* %d",
 		FormatRepo(originalRepo),
 		FormatUser(sender),
 		event.Repo.GetStargazersCount(),
