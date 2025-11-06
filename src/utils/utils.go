@@ -2,9 +2,32 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
+
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/strikethrough"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/table"
 )
+
+// ConvertHTMLToMarkdown converts HTML to Markdown using the html-to-markdown library.
+func ConvertHTMLToMarkdown(html string) string {
+	conv := converter.NewConverter(
+		converter.WithPlugins(
+			strikethrough.NewStrikethroughPlugin(),
+			table.NewTablePlugin(),
+		),
+	)
+
+	markdown, err := conv.ConvertString(html)
+	if err != nil {
+		log.Println("Error converting HTML to Markdown:", err)
+		return html
+	}
+
+	return markdown
+}
 
 // EscapeMarkdownV2 escapes characters for Telegram's MarkdownV2 format.
 func EscapeMarkdownV2(text string) string {
@@ -42,10 +65,12 @@ func EscapeMarkdownV2URL(text string) string {
 
 // FormatTextWithMarkdown preserves Markdown links and code blocks while escaping other special characters.
 func FormatTextWithMarkdown(text string) string {
+	markdownText := ConvertHTMLToMarkdown(text)
+
 	re := regexp.MustCompile("(?s)\\[[^\\]]+\\]\\([^\\)]+\\)|`[^`]+`|```.+?```")
 
 	var originals []string
-	tempBody := re.ReplaceAllStringFunc(text, func(match string) string {
+	tempBody := re.ReplaceAllStringFunc(markdownText, func(match string) string {
 		originals = append(originals, match)
 		return fmt.Sprintf("___PLACEHOLDER_%d___", len(originals)-1)
 	})
