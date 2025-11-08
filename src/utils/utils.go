@@ -65,7 +65,19 @@ func EscapeMarkdownV2URL(text string) string {
 
 // FormatTextWithMarkdown preserves Markdown links and code blocks while escaping other special characters.
 func FormatTextWithMarkdown(text string) string {
-	markdownText := ConvertHTMLToMarkdown(text)
+	emailRe := regexp.MustCompile(`<[^> ]+@[^> ]+>`)
+	var emails []string
+	protectedText := emailRe.ReplaceAllStringFunc(text, func(m string) string {
+		emails = append(emails, m)
+		return fmt.Sprintf("___EMAIL_PLACEHOLDER_%d___", len(emails)-1)
+	})
+
+	markdownText := ConvertHTMLToMarkdown(protectedText)
+
+	for i, email := range emails {
+		placeholder := fmt.Sprintf("___EMAIL_PLACEHOLDER_%d___", i)
+		markdownText = strings.Replace(markdownText, placeholder, email, -1)
+	}
 
 	re := regexp.MustCompile("(?s)\\[[^\\]]+\\]\\([^\\)]+\\)|`[^`]+`|```.+?```")
 
