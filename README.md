@@ -1,94 +1,115 @@
-# GitHub Webhook to Telegram Bridge 🔗
+# GitHub Telegram Notify
 
-A lightweight Go service that listens for GitHub webhooks and forwards notifications to Telegram chats with clean formatting.
+A powerful, lightweight Go application that forwards GitHub webhook events to Telegram chats with rich, customizable notifications.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FAshokShau%2Fgithub-telegram-notify)
 
+This tool acts as a bridge between your GitHub repositories and your Telegram chats. It listens for over 40 different GitHub events—from code pushes and pull requests to security alerts and deployments—and transforms them into well-formatted, easy-to-read Telegram messages.
+
+It's designed for developers, DevOps engineers, and project managers who want to stay updated on repository activity without leaving their favorite messaging app.
+
 ## 🌟 Features
 
-- Real-time GitHub event notifications in Telegram
-- Supports 20+ GitHub event types (pushes, PRs, issues, deployments, etc.)
-- Clean, formatted messages with emoji visual cues
-- Easy deployment to Vercel
-- Lightweight
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Go 1.20+ (for local development)
-- [Telegram bot token](https://core.telegram.org/bots#6-botfather)
-- GitHub repository admin access
-
-### Local Development
-```bash
-git clone https://github.com/AshokShau/github-telegram-notify.git
-cd github-telegram-notify
-go run main.go
-```
-
-For local testing, expose your port using:
-```bash
-ngrok http 3000
-```
-
-## ⚙️ Configuration
-
-1. **Environment Variables**:
-    - `BOT_TOKEN`: Your Telegram bot token
-    - `PORT`: Server port (default: 3000)
-
-2. **GitHub Webhook Setup**:
-    - Payload URL: `https://your-domain.com/github?chat_id=YOUR_CHAT_ID`
-    - Content type: `application/json`
-    - Events: Select events to forward
+- **Comprehensive Event Support**: Get notified for over 40 GitHub event types.
+- **Rich Formatting**: Messages are parsed into Telegram's MarkdownV2 format, with emojis and interactive buttons.
+- **Easy to Deploy**: One-click deployment to Vercel, or run it anywhere Go is supported.
+- **Lightweight & Fast**: Built with Go for minimal resource consumption.
+- **Customizable**: Fork the repo to customize message formats and add your own logic.
+- **Open Source**: Licensed under the MIT license.
 
 ## 🛠️ Supported Events
 
-| Event Type          | Description                    |
-|---------------------|--------------------------------|
-| Push                | Code pushes to branches        |
-| Pull Request        | PR opened/closed/merged        |
-| Issues              | Issue created/commented/closed |
-| Releases            | New version releases           |
-| Deployments         | Code deployments               |
-| Security Advisories | Vulnerability alerts           |
-| And More            | ......                         |
+This webhook supports a wide range of GitHub events, including:
+
+- **Code & Repository**: `push`, `release`, `fork`, `repository`
+- **Pull Requests**: `pull_request`
+- **Issues**: `issues`, `issue_comment`
+- **Discussions**: `discussion`, `discussion_comment`
+- **CI/CD & Deployments**: `deployment`, `deployment_status`, `workflow_job`, `workflow_run`, `workflow_dispatch`
+- **Security**: `repository_vulnerability_alert`, `secret_scanning_alert`
+- **And many more...**
+
+A full list of supported events can be found in the `src/utils/githubEvents.go` file.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Go**: Version 1.20 or higher (for local development).
+- **Telegram Bot Token**: You can get one from [@BotFather](https://core.telegram.org/bots#6-botfather).
+- **GitHub Repository**: You'll need admin access to the repository you want to monitor.
+
+### Local Development
+
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/AshokShau/github-telegram-notify.git
+    cd github-telegram-notify
+    ```
+
+2.  **Set up environment variables**:
+    Create a `.env` file in the root of the project and add your Telegram bot token:
+    ```
+    BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
+    ```
+
+3.  **Run the application**:
+    ```bash
+    go run main.go
+    ```
+    The server will start on port `3000` by default.
+
+4.  **Expose your local server**:
+    To receive webhooks from GitHub, you'll need to expose your local server to the internet. We recommend using a tool like [ngrok](https://ngrok.com/):
+    ```bash
+    ngrok http 3000
+    ```
+    This will give you a public URL that you can use for your GitHub webhook.
+
+### GitHub Webhook Configuration
+
+1.  Go to your GitHub repository's **Settings > Webhooks**.
+2.  Click **Add webhook**.
+3.  **Payload URL**: Enter the URL from ngrok, followed by `/github?chat_id=YOUR_CHAT_ID`. Replace `YOUR_CHAT_ID` with the ID of the Telegram chat where you want to receive notifications.
+4.  **Content type**: Select `application/json`.
+5.  **Secret**: (Optional) You can add a webhook secret for added security.
+6.  **Which events would you like to trigger this webhook?**: Select the events you want to be notified about.
+7.  Click **Add webhook**.
 
 ## 🌐 Deployment
 
 ### Vercel (Recommended)
-1. Fork this repository
-2. Create new Vercel project
-3. Import your forked repo
-4. Add `BOT_TOKEN` in project settings
-5. Deploy!
+
+The easiest way to deploy this application is with Vercel.
+
+1.  **Fork this repository**.
+2.  Click the **Deploy with Vercel** button at the top of this README.
+3.  In your Vercel project settings, add your `BOT_TOKEN` as an environment variable.
+4.  Deploy!
 
 ### Manual Deployment
-Build and run the binary:
+
+You can also build the application and run it as a binary on any server:
+
 ```bash
 go build -o gh-telegram
 ./gh-telegram
 ```
 
-## 📚 Documentation
-
-- **Endpoint**: `/github` - Handles GitHub webhooks
-- **Query Params**:
-    - `chat_id`: Required Telegram chat ID
-
 ## 🤝 Contributing
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a PR with clear description
+Contributions are welcome! If you'd like to help improve this project, please:
+
+1.  Fork the repository.
+2.  Create a new branch for your feature or bug fix.
+3.  Submit a pull request with a clear description of your changes.
 
 ## 📜 License
 
-MIT License - See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## 💬 Support
 
-- [Demo Bot](https://t.me/FallenAlertBot)
-- [Telegram Support](https://t.me/AshokShau)
-- [Update Channel](https://t.me/FallenProjects)
+- **Demo Bot**: [@FallenAlertBot](https://t.me/FallenAlertBot)
+- **Telegram Support**: [@AshokShau](https://t.me/AshokShau)
+- **Updates Channel**: [@FallenProjects](https://t.me/FallenProjects)
