@@ -169,20 +169,13 @@ func HandlePushEvent(event *github.PushEvent) (string, *InlineKeyboardMarkup) {
 		}
 
 		commitMessage := FormatTextWithMarkdown(commit.GetMessage())
-		messageLines := strings.SplitN(commitMessage, "\n", 2)
-		firstLine := messageLines[0]
-		var restOfMessage string
-		if len(messageLines) > 1 {
-			restOfMessage = "\n" + messageLines[1]
-		}
 
 		msg += fmt.Sprintf(
-			"\\- [%s](%s): %s by %s%s\n",
+			"\\- [%s](%s): %s by %s\n",
 			EscapeMarkdownV2(shortSHA),
 			EscapeMarkdownV2URL(commitURL),
-			firstLine,
+			commitMessage,
 			authorStr,
-			restOfMessage,
 		)
 	}
 
