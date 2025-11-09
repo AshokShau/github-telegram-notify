@@ -50,7 +50,7 @@ A full list of supported events can be found in the `src/utils/githubEvents.go` 
 2.  **Set up environment variables**:
     Create a `.env` file in the root of the project and add your Telegram bot token:
     ```
-    BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
+    TOKEN=YOUR_TELEGRAM_BOT_TOKEN
     ```
 
 3.  **Run the application**:
@@ -111,5 +111,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## 💬 Support
 
 - **Demo Bot**: [@FallenAlertBot](https://t.me/FallenAlertBot)
-- **Telegram Support**: [@AshokShau](https://t.me/AshokShau)
 - **Updates Channel**: [@FallenProjects](https://t.me/FallenProjects)
