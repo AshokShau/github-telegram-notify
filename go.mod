@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.4.0
-	github.com/google/go-github/v77 v77.0.0
+	github.com/google/go-github/v79 v79.0.0
 )
 
 require (

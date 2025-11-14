@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v77/github"
+	"github.com/google/go-github/v79/github"
 )
 
 // GitHubWebhook processes GitHub webhooks

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-github/v77/github"
+	"github.com/google/go-github/v79/github"
 )
 
 func HandleIssuesEvent(event *github.IssuesEvent) (string, *InlineKeyboardMarkup) {
